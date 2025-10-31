@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../models/log_entry.dart';
 import '../providers/repository_providers.dart';
 import '../widgets/common.dart';
+import '../providers/auth_providers.dart';
 
 class AddLogScreen extends ConsumerStatefulWidget {
   const AddLogScreen({super.key});
@@ -39,7 +41,22 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     final formattedTime = DateFormat.yMd().add_jm().format(_logTime);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Log')),
+      appBar: AppBar(
+        title: const Text('Add Log'),
+        actions: [
+          IconButton(
+            tooltip: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () => context.go('/home'),
+          ),
+          IconButton(
+            tooltip: 'Log out',
+            icon: const Icon(Icons.logout),
+            onPressed: () =>
+                ref.read(authControllerProvider.notifier).logout(),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(

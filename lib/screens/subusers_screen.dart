@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../models/sub_user.dart';
 import '../providers/repository_providers.dart';
 import '../widgets/common.dart';
+import '../providers/auth_providers.dart';
 
 class SubUsersScreen extends ConsumerStatefulWidget {
   const SubUsersScreen({super.key});
@@ -35,7 +37,22 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sub-Users')),
+      appBar: AppBar(
+        title: const Text('Sub-Users'),
+        actions: [
+          IconButton(
+            tooltip: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () => context.go('/home'),
+          ),
+          IconButton(
+            tooltip: 'Log out',
+            icon: const Icon(Icons.logout),
+            onPressed: () =>
+                ref.read(authControllerProvider.notifier).logout(),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
