@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +9,10 @@ import '../core/storage/token_storage.dart';
 import '../repositories/auth_repository.dart';
 
 class AuthState {
-  const AuthState({this.token, this.loading = false, this.error});
+  const AuthState({this.token, this.userId, this.loading = false, this.error});
 
   final String? token;
+  final String? userId;
   final bool loading;
   final String? error;
 
@@ -18,11 +20,13 @@ class AuthState {
 
   AuthState copyWith({
     Object? token = _sentinel,
+    Object? userId = _sentinel,
     bool? loading,
     Object? error = _sentinel,
   }) {
     return AuthState(
       token: token == _sentinel ? this.token : token as String?,
+      userId: userId == _sentinel ? this.userId : userId as String?,
       loading: loading ?? this.loading,
       error: error == _sentinel ? this.error : error as String?,
     );
@@ -50,21 +54,34 @@ class AuthController extends Notifier<AuthState> {
   Future<void> _init() async {
     final token = await _storage.read();
     if (!ref.mounted) return;
-    state = AuthState(token: token);
+    final storedUserId = await _storage.readUserId();
+    final derivedUserId =
+        token != null ? _extractUserId(token) : null;
+    state = AuthState(
+      token: token,
+      userId: storedUserId ?? derivedUserId,
+    );
   }
 
   Future<void> login(String email, String password) async {
-    state = state.copyWith(token: null, loading: true, error: null);
+    state =
+        state.copyWith(token: null, userId: null, loading: true, error: null);
     try {
       final res = await _repo.login(email: email, password: password);
       await _storage.save(res.token);
-      state = AuthState(token: res.token);
+      final userId = res.userId ?? _extractUserId(res.token);
+      if (userId != null) {
+        await _storage.saveUserId(userId);
+      } else {
+        await _storage.clearUserId();
+      }
+      state = AuthState(token: res.token, userId: userId);
     } on DioException catch (e) {
       final message =
           e.response?.data?.toString() ?? e.message ?? 'Failed to log in';
-      state = AuthState(token: null, error: message);
+      state = AuthState(token: null, userId: null, error: message);
     } catch (e) {
-      state = AuthState(token: null, error: e.toString());
+      state = AuthState(token: null, userId: null, error: e.toString());
     }
   }
 
@@ -75,7 +92,8 @@ class AuthController extends Notifier<AuthState> {
     String? phone,
     String? country,
   }) async {
-    state = state.copyWith(token: null, loading: true, error: null);
+    state =
+        state.copyWith(token: null, userId: null, loading: true, error: null);
     try {
       await _repo.signup(
         username: username,
@@ -88,19 +106,36 @@ class AuthController extends Notifier<AuthState> {
     } on DioException catch (e) {
       final message =
           e.response?.data?.toString() ?? e.message ?? 'Failed to sign up';
-      state = AuthState(token: null, error: message);
+      state = AuthState(token: null, userId: null, error: message);
     } catch (e) {
-      state = AuthState(token: null, error: e.toString());
+      state = AuthState(token: null, userId: null, error: e.toString());
     }
   }
 
   Future<void> logout() async {
     await _storage.clear();
-    state = const AuthState(token: null);
+    state = const AuthState(token: null, userId: null);
   }
 
   void _handleUnauthorized() {
     unawaited(logout());
+  }
+
+  String? _extractUserId(String token) {
+    final parts = token.split('.');
+    if (parts.length < 2) return null;
+    try {
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      final candidate =
+          data['userId'] ?? data['user_id'] ?? data['sub'] ?? data['uid'];
+      if (candidate == null) return null;
+      return candidate.toString();
+    } catch (_) {
+      return null;
+    }
   }
 }
 
