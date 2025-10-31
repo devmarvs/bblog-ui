@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../repositories/log_repository.dart';
+import '../repositories/log_type_repository.dart';
 import '../repositories/subuser_repository.dart';
 import '../repositories/user_repository.dart';
 import 'auth_providers.dart';
@@ -15,4 +16,8 @@ final subUserRepositoryProvider = Provider<SubUserRepository>(
 
 final logsRepositoryProvider = Provider<LogsRepository>(
   (ref) => LogsRepository(ref.watch(dioProvider)),
+);
+
+final logTypeRepositoryProvider = Provider<LogTypeRepository>(
+  (ref) => LogTypeRepository(ref.watch(dioProvider)),
 );

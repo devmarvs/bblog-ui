@@ -4,17 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../models/log_entry.dart';
+import '../models/log_type.dart';
 import '../models/sub_user.dart';
 import '../providers/auth_providers.dart';
 import '../providers/repository_providers.dart';
 import '../widgets/common.dart';
-
-class _LogTypeOption {
-  const _LogTypeOption({required this.id, required this.label});
-
-  final int id;
-  final String label;
-}
 
 class AddLogScreen extends ConsumerStatefulWidget {
   const AddLogScreen({super.key});
@@ -27,15 +21,18 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
   final _formKey = GlobalKey<FormState>();
   final _logDesc = TextEditingController();
 
-  static const List<_LogTypeOption> _logTypeOptions = [
-    _LogTypeOption(id: 1, label: 'Feeding'),
-    _LogTypeOption(id: 2, label: 'Diaper Change'),
-    _LogTypeOption(id: 3, label: 'Sleep'),
-    _LogTypeOption(id: 4, label: 'Bath'),
-    _LogTypeOption(id: 5, label: 'Medication'),
+  static const List<LogType> _fallbackLogTypes = [
+    LogType(id: 1, name: 'Feeding'),
+    LogType(id: 2, name: 'Diaper Change'),
+    LogType(id: 3, name: 'Sleep'),
+    LogType(id: 4, name: 'Bath'),
+    LogType(id: 5, name: 'Medication'),
   ];
 
-  late _LogTypeOption _selectedLogType;
+  List<LogType> _logTypes = _fallbackLogTypes;
+  LogType? _selectedLogType;
+  bool _loadingLogTypes = false;
+  String? _logTypeError;
   List<SubUserModel>? _subUsers;
   SubUserModel? _selectedSubUser;
   bool _loadingSubUsers = false;
@@ -46,7 +43,11 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedLogType = _logTypeOptions.first;
+    _selectedLogType = _fallbackLogTypes.first;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadLogTypes();
+    });
   }
 
   @override
@@ -74,7 +75,8 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     final authState = ref.watch(authControllerProvider);
     final userId = authState.userId ?? '';
     final hasUserId = userId.isNotEmpty;
-    final canSubmit = !_submitting && _selectedSubUser != null && hasUserId;
+    final canSubmit =
+        !_submitting && _selectedSubUser != null && hasUserId && _selectedLogType != null;
     final formattedTime = DateFormat.yMd().add_jm().format(_logTime);
 
     if (hasUserId &&
@@ -140,33 +142,37 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DropdownButtonFormField<_LogTypeOption>(
-                    initialValue: _selectedLogType,
-                    items: _logTypeOptions
-                        .map(
-                          (option) => DropdownMenuItem(
-                            value: option,
-                            child: Text(option.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (option) {
-                      if (option == null) return;
-                      setState(() => _selectedLogType = option);
-                    },
-                    decoration: const InputDecoration(labelText: 'Log type'),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    elevation: 0,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    child: ListTile(
-                      title: const Text('Log name'),
-                      subtitle: Text(_selectedLogType.label),
+                  if (_loadingLogTypes)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: LinearProgressIndicator(),
+                    )
+                  else
+                    DropdownButtonFormField<LogType>(
+                      key: ValueKey(_selectedLogType?.id),
+                      initialValue: _selectedLogType,
+                      items: _logTypes
+                          .map(
+                            (option) => DropdownMenuItem(
+                              value: option,
+                              child: Text(option.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (option) {
+                        if (option == null) return;
+                        setState(() => _selectedLogType = option);
+                      },
+                      decoration: const InputDecoration(labelText: 'Log type'),
                     ),
-                  ),
+                  if (_logTypeError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        _logTypeError!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _logDesc,
@@ -294,6 +300,44 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
         time.minute,
       );
     });
+  }
+
+  Future<void> _loadLogTypes() async {
+    setState(() {
+      _loadingLogTypes = true;
+      _logTypeError = null;
+    });
+
+    final repo = ref.read(logTypeRepositoryProvider);
+    try {
+      final types = await repo.list();
+      if (!mounted) return;
+      setState(() {
+        if (types.isNotEmpty) {
+          _logTypes = types;
+          _selectedLogType = _selectedLogType != null
+              ? types.firstWhere(
+                  (t) => t.id == _selectedLogType!.id,
+                  orElse: () => types.first,
+                )
+              : types.first;
+        } else {
+          _logTypes = _fallbackLogTypes;
+          _selectedLogType = _fallbackLogTypes.first;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _logTypeError = 'Using default log types. Error: $e';
+        _logTypes = _fallbackLogTypes;
+        _selectedLogType ??= _fallbackLogTypes.first;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _loadingLogTypes = false);
+      }
+    }
   }
 
   Future<void> _loadSubUsers({
@@ -434,11 +478,12 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
   Future<void> _submit() async {
     final userId = ref.read(authControllerProvider).userId ?? '';
     final subUser = _selectedSubUser;
-    if (userId.isEmpty || subUser == null) {
+    final logType = _selectedLogType;
+    if (userId.isEmpty || subUser == null || logType == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Select a sub-user before adding an activity log.'),
+          content: Text('Select a sub-user and log type before adding an activity log.'),
         ),
       );
       return;
@@ -449,8 +494,8 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     final entry = LogEntry(
       userLog: userId,
       subUserId: subUser.subUserId,
-      logTypeId: _selectedLogType.id,
-      logName: _selectedLogType.label,
+      logTypeId: logType.id,
+      logName: logType.name,
       logTime: _logTime,
       logDescription: _logDesc.text.trim().isEmpty
           ? null

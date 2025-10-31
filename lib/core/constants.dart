@@ -7,6 +7,7 @@ class ApiPaths {
   static const String subUserLog = '$base/subuser/log';
   static String subUserLogs(String userId, String subUserId) =>
       '$base/user/$userId/subuser/$subUserId/log';
+  static const String logTypes = '$base/log/types';
 }
 
 /// 👇 Change this to your deployed API origin (include scheme & host, optional port)
@@ -14,4 +15,4 @@ class ApiPaths {
 /// const kApiBaseUrl = 'https://api.example.com';
 /// const kApiBaseUrl = 'http://10.0.2.2:8080'; // Android emulator to host
 /// const kApiBaseUrl = 'http://localhost:8080'; // iOS simulator to host
-const String kApiBaseUrl = 'http://localhost:8080'; //'http://10.0.2.2:8080';
+const String kApiBaseUrl = 'https://api.devmarvs.com';
