@@ -155,7 +155,15 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
                           .map(
                             (option) => DropdownMenuItem(
                               value: option,
-                              child: Text(option.name),
+                              child: _buildLogTypeLabel(context, option),
+                            ),
+                          )
+                          .toList(),
+                      selectedItemBuilder: (context) => _logTypes
+                          .map(
+                            (option) => Align(
+                              alignment: Alignment.centerLeft,
+                              child: _buildLogTypeLabel(context, option),
                             ),
                           )
                           .toList(),
@@ -519,5 +527,51 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
         setState(() => _submitting = false);
       }
     }
+  }
+
+  Widget _buildLogTypeLabel(BuildContext context, LogType type) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildLogTypeIcon(context, type.name),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            type.name,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLogTypeIcon(BuildContext context, String name) {
+    final lower = name.toLowerCase();
+    final color = Theme.of(context).colorScheme.primary;
+    if (lower.contains('poop') || lower.contains('stool')) {
+      return const Text('💩', style: TextStyle(fontSize: 18));
+    }
+    if (lower.contains('pee') || lower.contains('urine')) {
+      return Icon(Icons.water_drop, color: color, size: 20);
+    }
+    if (lower.contains('feed') || lower.contains('meal') || lower.contains('milk')) {
+      return Icon(Icons.restaurant, color: color, size: 20);
+    }
+    if (lower.contains('sleep') || lower.contains('nap')) {
+      return Icon(Icons.bedtime, color: color, size: 20);
+    }
+    if (lower.contains('diaper') || lower.contains('change')) {
+      return Icon(Icons.baby_changing_station, color: color, size: 20);
+    }
+    if (lower.contains('bath') || lower.contains('wash')) {
+      return Icon(Icons.bathtub, color: color, size: 20);
+    }
+    if (lower.contains('med') || lower.contains('medicine') || lower.contains('drug')) {
+      return Icon(Icons.medical_services, color: color, size: 20);
+    }
+    if (lower.contains('walk') || lower.contains('exercise')) {
+      return Icon(Icons.directions_walk, color: color, size: 20);
+    }
+    return Icon(Icons.event_note, color: color, size: 20);
   }
 }
