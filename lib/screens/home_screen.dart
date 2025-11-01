@@ -26,7 +26,7 @@ class HomeScreen extends ConsumerWidget {
           children: [
             Card(
               child: ListTile(
-                title: const Text('Sub-Users'),
+                title: const Text('Babies and Pets'),
                 subtitle: const Text('Manage babies or pets'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.go('/subusers'),

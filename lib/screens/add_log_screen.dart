@@ -76,7 +76,10 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     final userId = authState.userId ?? '';
     final hasUserId = userId.isNotEmpty;
     final canSubmit =
-        !_submitting && _selectedSubUser != null && hasUserId && _selectedLogType != null;
+        !_submitting &&
+        _selectedSubUser != null &&
+        hasUserId &&
+        _selectedLogType != null;
     final formattedTime = DateFormat.yMd().add_jm().format(_logTime);
 
     if (hasUserId &&
@@ -114,7 +117,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Sub-Users',
+                  'Babies and Pets',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 IconButton(
@@ -129,7 +132,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
             const SizedBox(height: 8),
             FilledButton.icon(
               icon: const Icon(Icons.person_add_alt_1),
-              label: const Text('Add Sub-User'),
+              label: const Text('Add a baby or pet'),
               onPressed: (!hasUserId || _loadingSubUsers || _submitting)
                   ? null
                   : _showCreateDialog,
@@ -491,7 +494,9 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Select a sub-user and log type before adding an activity log.'),
+          content: Text(
+            'Select a sub-user and log type before adding an activity log.',
+          ),
         ),
       );
       return;
@@ -535,12 +540,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
       children: [
         _buildLogTypeIcon(context, type.name),
         const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            type.name,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+        Flexible(child: Text(type.name, overflow: TextOverflow.ellipsis)),
       ],
     );
   }
@@ -554,7 +554,9 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     if (lower.contains('pee') || lower.contains('urine')) {
       return Icon(Icons.water_drop, color: color, size: 20);
     }
-    if (lower.contains('feed') || lower.contains('meal') || lower.contains('milk')) {
+    if (lower.contains('feed') ||
+        lower.contains('meal') ||
+        lower.contains('milk')) {
       return Icon(Icons.restaurant, color: color, size: 20);
     }
     if (lower.contains('sleep') || lower.contains('nap')) {
@@ -566,7 +568,9 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     if (lower.contains('bath') || lower.contains('wash')) {
       return Icon(Icons.bathtub, color: color, size: 20);
     }
-    if (lower.contains('med') || lower.contains('medicine') || lower.contains('drug')) {
+    if (lower.contains('med') ||
+        lower.contains('medicine') ||
+        lower.contains('drug')) {
       return Icon(Icons.medical_services, color: color, size: 20);
     }
     if (lower.contains('walk') || lower.contains('exercise')) {

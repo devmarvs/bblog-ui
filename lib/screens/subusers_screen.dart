@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../models/sub_user.dart';
 import '../providers/repository_providers.dart';
-import '../widgets/common.dart';
 import '../providers/auth_providers.dart';
 
 class SubUsersScreen extends ConsumerStatefulWidget {
@@ -15,30 +14,40 @@ class SubUsersScreen extends ConsumerStatefulWidget {
 }
 
 class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
-  final _userIdCtrl = TextEditingController();
-
   List<SubUserModel>? _items;
   bool _loading = false;
   String? _error;
 
   @override
-  void initState() {
-    super.initState();
-    _userIdCtrl.addListener(_onUserIdChanged);
-  }
-
-  @override
-  void dispose() {
-    _userIdCtrl.removeListener(_onUserIdChanged);
-    _userIdCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      final prevId = previous?.userId ?? '';
+      final nextId = next.userId ?? '';
+      if (nextId.isNotEmpty && nextId != prevId) {
+        _load(userId: nextId, showSnackOnMissingId: false);
+      }
+      if (nextId.isEmpty && prevId.isNotEmpty) {
+        setState(() {
+          _items = null;
+          _error = null;
+          _loading = false;
+        });
+      }
+    });
+
+    final authState = ref.watch(authControllerProvider);
+    final userId = authState.userId ?? '';
+    final hasUser = userId.isNotEmpty;
+
+    if (hasUser && !_loading && _items == null && _error == null) {
+      Future.microtask(
+        () => _load(userId: userId, showSnackOnMissingId: false),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sub-Users'),
+        title: const Text('Babies and Pets'),
         actions: [
           IconButton(
             tooltip: 'Home',
@@ -48,38 +57,33 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
           IconButton(
             tooltip: 'Log out',
             icon: const Icon(Icons.logout),
-            onPressed: () =>
-                ref.read(authControllerProvider.notifier).logout(),
+            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
           ),
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: _userIdCtrl,
-              decoration: const InputDecoration(labelText: 'User ID'),
-            ),
-            const SizedBox(height: 12),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: PrimaryButton(
-                    label: 'Load',
-                    loading: _loading,
-                    onPressed: _loading ? null : _load,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                FilledButton.icon(
-                  onPressed: (_loading || _userIdCtrl.text.trim().isEmpty)
+                Text('', style: Theme.of(context).textTheme.titleMedium),
+                IconButton(
+                  tooltip: 'Refresh',
+                  onPressed: (_loading || !hasUser)
                       ? null
-                      : () => _showCreateDialog(),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add'),
+                      : () => _load(showSnackOnMissingId: false),
+                  icon: const Icon(Icons.refresh),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: (_loading || !hasUser) ? null : _showCreateDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Sub-User'),
             ),
             const SizedBox(height: 12),
             Expanded(child: _buildBody()),
@@ -89,9 +93,11 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
     );
   }
 
-  void _onUserIdChanged() => setState(() {});
-
   Widget _buildBody() {
+    final hasUser = (ref.read(authControllerProvider).userId ?? '').isNotEmpty;
+    if (!hasUser) {
+      return const Center(child: Text('Sign in to view your sub-users.'));
+    }
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -101,7 +107,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
       );
     }
     if (_items == null) {
-      return const Center(child: Text('Enter a user ID to load sub-users'));
+      return const Center(child: Text('Fetching sub-users...'));
     }
     if (_items!.isEmpty) {
       return const Center(child: Text('No sub-users yet'));
@@ -120,10 +126,14 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
     );
   }
 
-  Future<void> _load() async {
-    final userId = _userIdCtrl.text.trim();
-    if (userId.isEmpty) {
-      setState(() => _error = 'Enter a user ID first');
+  Future<void> _load({String? userId, bool showSnackOnMissingId = true}) async {
+    final id = userId ?? ref.read(authControllerProvider).userId ?? '';
+    if (id.isEmpty) {
+      if (showSnackOnMissingId && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User information unavailable.')),
+        );
+      }
       return;
     }
 
@@ -134,7 +144,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
 
     final repo = ref.read(subUserRepositoryProvider);
     try {
-      final data = await repo.list(userId);
+      final data = await repo.list(id);
       if (!mounted) return;
       setState(() => _items = data);
     } catch (e) {
@@ -148,6 +158,17 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
   }
 
   Future<void> _showCreateDialog() async {
+    final userId = ref.read(authControllerProvider).userId ?? '';
+    if (userId.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to add sub-user without a valid account.'),
+        ),
+      );
+      return;
+    }
+
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -199,7 +220,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
       final repo = ref.read(subUserRepositoryProvider);
       try {
         await repo.create(
-          _userIdCtrl.text.trim(),
+          userId,
           name: nameCtrl.text.trim(),
           description: descCtrl.text.trim().isEmpty
               ? null
@@ -209,7 +230,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Sub-user created')));
-        await _load();
+        await _load(showSnackOnMissingId: false);
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(
