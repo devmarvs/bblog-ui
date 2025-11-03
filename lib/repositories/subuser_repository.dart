@@ -18,11 +18,11 @@ class SubUserRepository {
   Future<void> create(
     String userId, {
     required String name,
-    String? description,
+    required int userTypeId,
   }) async {
     await dio.post(
       ApiPaths.userSubUsers(userId),
-      data: {'name': name, if (description != null) 'description': description},
+      data: {'name': name, 'userTypeId': userTypeId},
     );
   }
 

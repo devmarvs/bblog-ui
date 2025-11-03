@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/sub_user.dart';
+import '../models/user_type.dart';
 import '../providers/repository_providers.dart';
 import '../providers/auth_providers.dart';
 
@@ -17,6 +18,19 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
   List<SubUserModel>? _items;
   bool _loading = false;
   String? _error;
+  List<UserType>? _userTypes;
+  bool _loadingUserTypes = false;
+  String? _userTypeError;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadUserTypes();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +83,10 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Sub-Users',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 IconButton(
                   tooltip: 'Refresh',
                   onPressed: (_loading || !hasUser)
@@ -81,10 +98,19 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
             ),
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed: (_loading || !hasUser) ? null : _showCreateDialog,
+              onPressed:
+                  (_loading || !hasUser || _loadingUserTypes) ? null : _showCreateDialog,
               icon: const Icon(Icons.add),
-              label: const Text('Add Sub-User'),
+              label: const Text('Add a baby or pet'),
             ),
+            if (_userTypeError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  _userTypeError!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
             const SizedBox(height: 12),
             Expanded(child: _buildBody()),
           ],
@@ -120,7 +146,9 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
         return ListTile(
           leading: const Icon(Icons.child_care),
           title: Text(item.name),
-          subtitle: Text(item.description ?? 'No description'),
+          subtitle: (item.description != null && item.description!.isNotEmpty)
+              ? Text(item.description!)
+              : null,
         );
       },
     );
@@ -169,34 +197,62 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
       return;
     }
 
+    if ((_userTypes == null || _userTypes!.isEmpty) && !_loadingUserTypes) {
+      await _loadUserTypes();
+    }
+    if (!mounted) return;
+
+    if (_userTypes == null || _userTypes!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to load sub-user types. Try again later.'),
+        ),
+      );
+      return;
+    }
+
     final nameCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    UserType? selectedType = _userTypes!.first;
 
     final shouldCreate = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Add Sub-User'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) =>
-                    (value == null || value.isEmpty) ? 'Enter a name' : null,
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: descCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
+        content: StatefulBuilder(
+          builder: (context, setStateDialog) => Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<UserType>(
+                  key: ValueKey(selectedType?.id),
+                  initialValue: selectedType,
+                  items: _userTypes!
+                      .map(
+                        (type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(type.description),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setStateDialog(() => selectedType = value);
+                  },
+                  decoration: const InputDecoration(labelText: 'Type'),
+                  validator: (value) => value == null ? 'Select a type' : null,
                 ),
-                maxLines: 2,
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty)
+                          ? 'Enter a name'
+                          : null,
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -222,9 +278,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
         await repo.create(
           userId,
           name: nameCtrl.text.trim(),
-          description: descCtrl.text.trim().isEmpty
-              ? null
-              : descCtrl.text.trim(),
+          userTypeId: selectedType!.id,
         );
         if (!mounted) return;
         ScaffoldMessenger.of(
@@ -240,6 +294,31 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
     }
 
     nameCtrl.dispose();
-    descCtrl.dispose();
+  }
+
+  Future<void> _loadUserTypes() async {
+    setState(() {
+      _loadingUserTypes = true;
+      _userTypeError = null;
+    });
+
+    final repo = ref.read(userTypeRepositoryProvider);
+    try {
+      final types = await repo.list();
+      if (!mounted) return;
+      setState(() {
+        _userTypes = types;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _userTypes = null;
+        _userTypeError = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _loadingUserTypes = false);
+      }
+    }
   }
 }

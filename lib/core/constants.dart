@@ -8,6 +8,7 @@ class ApiPaths {
   static String subUserLogs(String userId, String subUserId) =>
       '$base/user/$userId/subuser/$subUserId/log';
   static const String logTypes = '$base/log/types';
+  static const String userTypes = '$base/user/types';
 }
 
 /// 👇 Change this to your deployed API origin (include scheme & host, optional port)

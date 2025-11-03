@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../models/log_entry.dart';
 import '../models/log_type.dart';
 import '../models/sub_user.dart';
+import '../models/user_type.dart';
 import '../providers/auth_providers.dart';
 import '../providers/repository_providers.dart';
 import '../widgets/common.dart';
@@ -39,6 +40,9 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
   String? _subUserError;
   DateTime _logTime = DateTime.now();
   bool _submitting = false;
+  List<UserType>? _userTypes;
+  bool _loadingUserTypes = false;
+  String? _userTypeError;
 
   @override
   void initState() {
@@ -47,6 +51,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _loadLogTypes();
+      _loadUserTypes();
     });
   }
 
@@ -133,10 +138,18 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
             FilledButton.icon(
               icon: const Icon(Icons.person_add_alt_1),
               label: const Text('Add a baby or pet'),
-              onPressed: (!hasUserId || _loadingSubUsers || _submitting)
+              onPressed: (!hasUserId || _loadingSubUsers || _submitting || _loadingUserTypes)
                   ? null
                   : _showCreateDialog,
             ),
+            if (_userTypeError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  _userTypeError!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
             const SizedBox(height: 16),
             _buildSubUserList(hasUserId: hasUserId),
             const SizedBox(height: 24),
@@ -351,6 +364,32 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     }
   }
 
+  Future<void> _loadUserTypes() async {
+    setState(() {
+      _loadingUserTypes = true;
+      _userTypeError = null;
+    });
+
+    final repo = ref.read(userTypeRepositoryProvider);
+    try {
+      final types = await repo.list();
+      if (!mounted) return;
+      setState(() {
+        _userTypes = types;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _userTypes = null;
+        _userTypeError = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _loadingUserTypes = false);
+      }
+    }
+  }
+
   Future<void> _loadSubUsers({
     String? userId,
     bool showSnackOnMissingId = true,
@@ -406,7 +445,9 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     final userId = ref.read(authControllerProvider).userId ?? '';
     if (userId.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
         const SnackBar(
           content: Text('Unable to add sub-user without a valid account.'),
         ),
@@ -414,35 +455,62 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
       return;
     }
 
+    if ((_userTypes == null || _userTypes!.isEmpty) && !_loadingUserTypes) {
+      await _loadUserTypes();
+    }
+    if (!mounted) return;
+
+    if (_userTypes == null || _userTypes!.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to load sub-user types. Try again later.'),
+        ),
+      );
+      return;
+    }
+
     final nameCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    UserType? selectedType = _userTypes!.first;
 
     final shouldCreate = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Add Sub-User'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) => (value == null || value.trim().isEmpty)
-                    ? 'Enter a name'
-                    : null,
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: descCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
+        content: StatefulBuilder(
+          builder: (context, setStateDialog) => Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<UserType>(
+                  key: ValueKey(selectedType?.id),
+                  initialValue: selectedType,
+                  items: _userTypes!
+                      .map(
+                        (type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(type.description),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setStateDialog(() => selectedType = value),
+                  decoration: const InputDecoration(labelText: 'Type'),
+                  validator: (value) => value == null ? 'Select a type' : null,
                 ),
-                maxLines: 2,
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty)
+                          ? 'Enter a name'
+                          : null,
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -462,16 +530,19 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
       ),
     );
 
-    if (shouldCreate != true) return;
+    if (shouldCreate != true || selectedType == null) {
+      nameCtrl.dispose();
+      return;
+    }
 
+    final confirmedType = selectedType!;
     final repo = ref.read(subUserRepositoryProvider);
     try {
       final trimmedName = nameCtrl.text.trim();
-      final trimmedDesc = descCtrl.text.trim();
       await repo.create(
         userId,
         name: trimmedName,
-        description: trimmedDesc.isEmpty ? null : trimmedDesc,
+        userTypeId: confirmedType.id,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -483,6 +554,8 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      nameCtrl.dispose();
     }
   }
 

@@ -78,7 +78,7 @@ class HomeScreen extends ConsumerWidget {
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
           NavigationDestination(
             icon: Icon(Icons.group_outlined),
-            label: 'Sub-Users',
+            label: 'Pets/Babies',
           ),
           NavigationDestination(
             icon: Icon(Icons.add_circle_outline),
