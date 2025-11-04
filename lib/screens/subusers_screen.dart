@@ -98,8 +98,9 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
             ),
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed:
-                  (_loading || !hasUser || _loadingUserTypes) ? null : _showCreateDialog,
+              onPressed: (_loading || !hasUser || _loadingUserTypes)
+                  ? null
+                  : _showCreateDialog,
               icon: const Icon(Icons.add),
               label: const Text('Add a baby or pet'),
             ),
@@ -213,12 +214,25 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
 
     final nameCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
-    UserType? selectedType = _userTypes!.first;
+    final availableTypes = _userTypes!
+        .where((type) => type.description.trim().toLowerCase() != 'user')
+        .toList();
+
+    if (availableTypes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No sub-user types available at the moment.'),
+        ),
+      );
+      return;
+    }
+
+    UserType? selectedType = availableTypes.first;
 
     final shouldCreate = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Sub-User'),
+        title: const Text('Add Baby or Pet'),
         content: StatefulBuilder(
           builder: (context, setStateDialog) => Form(
             key: formKey,
@@ -226,9 +240,8 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<UserType>(
-                  key: ValueKey(selectedType?.id),
                   initialValue: selectedType,
-                  items: _userTypes!
+                  items: availableTypes
                       .map(
                         (type) => DropdownMenuItem(
                           value: type,
@@ -246,10 +259,9 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
                 TextFormField(
                   controller: nameCtrl,
                   decoration: const InputDecoration(labelText: 'Name'),
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty)
-                          ? 'Enter a name'
-                          : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Enter a name'
+                      : null,
                 ),
               ],
             ),
