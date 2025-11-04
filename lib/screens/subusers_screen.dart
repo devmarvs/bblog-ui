@@ -144,8 +144,9 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
       separatorBuilder: (_, index) => const Divider(height: 1),
       itemBuilder: (_, index) {
         final item = _items![index];
+        final iconData = _iconForSubUser(item.userTypeId);
         return ListTile(
-          leading: const Icon(Icons.child_care),
+          leading: Icon(iconData),
           title: Text(item.name),
           subtitle: (item.description != null && item.description!.isNotEmpty)
               ? Text(item.description!)
@@ -331,6 +332,17 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
       if (mounted) {
         setState(() => _loadingUserTypes = false);
       }
+    }
+  }
+
+  IconData _iconForSubUser(int? userTypeId) {
+    switch (userTypeId) {
+      case 2:
+        return Icons.child_friendly;
+      case 3:
+        return Icons.pets;
+      default:
+        return Icons.person_outline;
     }
   }
 }

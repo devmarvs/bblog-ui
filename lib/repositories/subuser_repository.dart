@@ -22,7 +22,10 @@ class SubUserRepository {
   }) async {
     await dio.post(
       ApiPaths.userSubUsers(userId),
-      data: {'name': name, 'userTypeId': userTypeId},
+      data: {
+        'name': name,
+        'user_type_id': userTypeId,
+      },
     );
   }
 

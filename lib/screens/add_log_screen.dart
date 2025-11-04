@@ -267,36 +267,34 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     if (_subUsers!.isEmpty) {
       return const Text('No sub-users yet. Add one to start logging.');
     }
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _subUsers!.length,
-      separatorBuilder: (_, index) => const SizedBox(height: 8),
-      itemBuilder: (_, index) {
-        final sub = _subUsers![index];
-        final isSelected = _selectedSubUser?.subUserId == sub.subUserId;
-        return Card(
-          elevation: isSelected ? 2 : 0,
-          child: ListTile(
-            title: Text(sub.name),
-            subtitle: (sub.description != null && sub.description!.isNotEmpty)
-                ? Text(sub.description!)
-                : null,
-            trailing: isSelected
-                ? Icon(
-                    Icons.check_circle,
-                    color: Theme.of(context).colorScheme.primary,
-                  )
-                : null,
-            selected: isSelected,
-            onTap: () {
-              setState(() {
-                _selectedSubUser = sub;
-              });
-            },
+    final items = _subUsers!
+        .map(
+          (sub) => DropdownMenuItem<SubUserModel>(
+            value: sub,
+            child: _buildSubUserLabel(sub),
           ),
-        );
+        )
+        .toList();
+    return DropdownButtonFormField<SubUserModel>(
+      key: ValueKey(_selectedSubUser?.subUserId ?? 'none'),
+      value: _selectedSubUser,
+      items: items,
+      isExpanded: true,
+      selectedItemBuilder: (context) => _subUsers!
+          .map(
+            (sub) => Align(
+              alignment: Alignment.centerLeft,
+              child: _buildSubUserLabel(sub, dense: true),
+            ),
+          )
+          .toList(),
+      onChanged: (sub) {
+        if (sub == null) return;
+        setState(() => _selectedSubUser = sub);
       },
+      decoration: const InputDecoration(
+        labelText: 'Select baby or pet',
+      ),
     );
   }
 
@@ -438,6 +436,37 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
       if (mounted) {
         setState(() => _loadingSubUsers = false);
       }
+    }
+  }
+
+  Widget _buildSubUserLabel(SubUserModel sub, {bool dense = false}) {
+    final icon = _iconForSubUser(sub.userTypeId);
+    final textStyle = dense
+        ? Theme.of(context).textTheme.bodyMedium
+        : Theme.of(context).textTheme.bodyLarge;
+    return Row(
+      children: [
+        Icon(icon, size: dense ? 20 : 24),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            sub.name,
+            style: textStyle,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  IconData _iconForSubUser(int? userTypeId) {
+    switch (userTypeId) {
+      case 2:
+        return Icons.child_friendly;
+      case 3:
+        return Icons.pets;
+      default:
+        return Icons.person_outline;
     }
   }
 
