@@ -31,7 +31,7 @@ class HomeScreen extends ConsumerWidget {
                 title: const Text('Babies and Pets'),
                 subtitle: const Text('Manage babies or pets'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.go('/subusers'),
+                onTap: () => context.push('/subusers'),
               ),
             ),
             const SizedBox(height: 12),
@@ -40,7 +40,7 @@ class HomeScreen extends ConsumerWidget {
                 title: const Text('Add Log'),
                 subtitle: const Text('Record a new activity'),
                 trailing: const Icon(Icons.add_circle_outline),
-                onTap: () => context.go('/add-log'),
+                onTap: () => context.push('/add-log'),
               ),
             ),
             const SizedBox(height: 12),
@@ -49,7 +49,7 @@ class HomeScreen extends ConsumerWidget {
                 title: const Text('History'),
                 subtitle: const Text('View logs by sub-user'),
                 trailing: const Icon(Icons.history),
-                onTap: () => context.go('/history'),
+                onTap: () => context.push('/history'),
               ),
             ),
           ],
@@ -63,16 +63,16 @@ class HomeScreen extends ConsumerWidget {
               context.go('/home');
               break;
             case 1:
-              context.go('/subusers');
+              context.push('/subusers');
               break;
             case 2:
-              context.go('/add-log');
+              context.push('/add-log');
               break;
             case 3:
-              context.go('/history');
+              context.push('/history');
               break;
             case 4:
-              context.go('/profile');
+              context.push('/profile');
               break;
           }
         },
