@@ -27,6 +27,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+    final logoAsset = isDark
+        ? 'lib/assets/images/Baby_Logs_Logo_Happy_dark.png'
+        : 'lib/assets/images/Baby_Logs_Logo_Happy_light.png';
     return Scaffold(
       appBar: AppBar(
         leading: buildBackButton(context),
@@ -42,6 +47,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Image.asset(
+                    logoAsset,
+                    height: 120,
+                  ),
+                  const SizedBox(height: 24),
                   TextFormField(
                     controller: _emailCtrl,
                     decoration: const InputDecoration(labelText: 'Email'),
