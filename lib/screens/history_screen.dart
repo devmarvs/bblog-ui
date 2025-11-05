@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,6 +27,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   List<SubUserModel>? _subUsers;
   String? _selectedSubUserId;
   String? _lastRequestedUserId;
+  String? _logsResponsePreview;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +44,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           _logs = null;
           _subUsersError = null;
           _logsError = null;
+          _logsResponsePreview = null;
         });
       });
     } else if (userId != null && userId != _lastRequestedUserId) {
@@ -74,12 +78,24 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildSubUserList(userId),
+            if (_logsResponsePreview != null) ...[
+              const SizedBox(height: 8),
+              _LogsResponseBox(content: _logsResponsePreview!),
+            ],
             const SizedBox(height: 12),
             Expanded(child: _buildLogList()),
           ],
         ),
       ),
     );
+  }
+
+  String _formatJson(dynamic data) {
+    try {
+      return const JsonEncoder.withIndent('  ').convert(data);
+    } catch (_) {
+      return data.toString();
+    }
   }
 
   Widget _buildSubUserList(String? userId) {
@@ -257,6 +273,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       _selectedSubUserId = null;
       _logs = null;
       _logsError = null;
+      _logsResponsePreview = null;
     });
     final repo = ref.read(subUserRepositoryProvider);
     try {
@@ -280,7 +297,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _subUsersError = e.toString());
+      setState(() {
+        _subUsersError = e.toString();
+        _logsResponsePreview = 'Error loading sub-users: $e';
+      });
     } finally {
       if (mounted) {
         setState(() => _loadingSubUsers = false);
@@ -296,6 +316,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         _selectedSubUserId = subUser.subUserId;
         _logsError = 'Unable to determine user ID.';
         _logs = null;
+        _logsResponsePreview = 'Unable to determine user ID.';
       });
       return;
     }
@@ -304,15 +325,22 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       _loadingLogs = true;
       _logsError = null;
       _logs = null;
+      _logsResponsePreview = 'Loading logs...';
     });
     final repo = ref.read(logsRepositoryProvider);
     try {
-      final data = await repo.listBySubUser(userId, subUser.subUserId);
+      final result = await repo.listBySubUser(userId, subUser.subUserId);
       if (!mounted) return;
-      setState(() => _logs = data);
+      setState(() {
+        _logs = result.entries;
+        _logsResponsePreview = _formatJson(result.rawResponse);
+      });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _logsError = e.toString());
+      setState(() {
+        _logsError = e.toString();
+        _logsResponsePreview = 'Error loading logs: $e';
+      });
     } finally {
       if (mounted) {
         setState(() => _loadingLogs = false);
@@ -429,6 +457,33 @@ class _LogEntryTile extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _LogsResponseBox extends StatelessWidget {
+  const _LogsResponseBox({required this.content});
+
+  final String content;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: SelectableText(
+        content,
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontFamily: 'RobotoMono',
+        ),
+      ),
     );
   }
 }
