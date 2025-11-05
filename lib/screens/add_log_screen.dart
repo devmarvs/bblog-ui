@@ -664,44 +664,118 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildLogTypeIcon(context, type.name),
+        _buildLogTypeIcon(context, type),
         const SizedBox(width: 8),
         Flexible(child: Text(type.name, overflow: TextOverflow.ellipsis)),
       ],
     );
   }
 
-  Widget _buildLogTypeIcon(BuildContext context, String name) {
-    final lower = name.toLowerCase();
+  Widget _buildLogTypeIcon(BuildContext context, LogType type) {
     final color = Theme.of(context).colorScheme.primary;
-    if (lower.contains('poop') || lower.contains('stool')) {
-      return const Text('💩', style: TextStyle(fontSize: 18));
+    final rule = _findLogIconRule(type);
+    if (rule?.emoji != null) {
+      return Text(rule!.emoji!, style: const TextStyle(fontSize: 18));
     }
-    if (lower.contains('pee') || lower.contains('urine')) {
-      return Icon(Icons.water_drop, color: color, size: 20);
-    }
-    if (lower.contains('feed') ||
-        lower.contains('meal') ||
-        lower.contains('milk')) {
-      return Icon(Icons.restaurant, color: color, size: 20);
-    }
-    if (lower.contains('sleep') || lower.contains('nap')) {
-      return Icon(Icons.bedtime, color: color, size: 20);
-    }
-    if (lower.contains('diaper') || lower.contains('change')) {
-      return Icon(Icons.baby_changing_station, color: color, size: 20);
-    }
-    if (lower.contains('bath') || lower.contains('wash')) {
-      return Icon(Icons.bathtub, color: color, size: 20);
-    }
-    if (lower.contains('med') ||
-        lower.contains('medicine') ||
-        lower.contains('drug')) {
-      return Icon(Icons.medical_services, color: color, size: 20);
-    }
-    if (lower.contains('walk') || lower.contains('exercise')) {
-      return Icon(Icons.directions_walk, color: color, size: 20);
-    }
-    return Icon(Icons.event_note, color: color, size: 20);
+    final icon = rule?.icon ?? Icons.event_note;
+    return Icon(icon, color: color, size: 20);
   }
 }
+
+_LogIconRule? _findLogIconRule(LogType type) {
+  final name = type.name.toLowerCase();
+  for (final rule in _logIconRules) {
+    if (rule.ids != null && rule.ids!.contains(type.id)) {
+      return rule;
+    }
+    if (rule.keywords.any(name.contains)) {
+      return rule;
+    }
+  }
+  return null;
+}
+
+class _LogIconRule {
+  final List<String> keywords;
+  final List<int>? ids;
+  final IconData? icon;
+  final String? emoji;
+
+  const _LogIconRule({
+    required this.keywords,
+    this.ids,
+    this.icon,
+    this.emoji,
+  });
+}
+
+const List<_LogIconRule> _logIconRules = [
+  _LogIconRule(
+    keywords: ['poop', 'stool', 'bm', 'bowel', 'dirty'],
+    emoji: '💩',
+  ),
+  _LogIconRule(
+    keywords: ['pee', 'urine', 'wet', 'potty'],
+    icon: Icons.water_drop,
+  ),
+  _LogIconRule(
+    keywords: ['milk', 'bottle', 'formula'],
+    emoji: '🍼',
+  ),
+  _LogIconRule(
+    keywords: ['feed', 'meal', 'food', 'nurse', 'latch'],
+    icon: Icons.restaurant,
+  ),
+  _LogIconRule(
+    keywords: ['pump', 'pumping'],
+    icon: Icons.local_drink,
+  ),
+  _LogIconRule(
+    keywords: ['sleep', 'nap', 'bed', 'rest', 'doze'],
+    icon: Icons.bedtime,
+  ),
+  _LogIconRule(
+    keywords: ['diaper', 'change', 'nappy', 'cloth'],
+    icon: Icons.baby_changing_station,
+  ),
+  _LogIconRule(
+    keywords: ['bath', 'wash', 'shower', 'tub', 'clean'],
+    icon: Icons.bathtub,
+  ),
+  _LogIconRule(
+    keywords: ['med', 'medicine', 'medication', 'drug', 'dose', 'vitamin'],
+    icon: Icons.medication,
+  ),
+  _LogIconRule(
+    keywords: ['doctor', 'clinic', 'checkup', 'health', 'nurse'],
+    icon: Icons.healing,
+  ),
+  _LogIconRule(
+    keywords: ['temperature', 'temp', 'fever', 'thermometer'],
+    icon: Icons.device_thermostat,
+  ),
+  _LogIconRule(
+    keywords: ['walk', 'exercise', 'run', 'outside', 'play', 'park'],
+    icon: Icons.directions_walk,
+  ),
+  _LogIconRule(
+    keywords: ['teeth', 'brush', 'dental'],
+    icon: Icons.brush,
+  ),
+  _LogIconRule(
+    keywords: ['story', 'read', 'book'],
+    icon: Icons.menu_book,
+  ),
+  _LogIconRule(
+    keywords: ['music', 'song', 'sing'],
+    icon: Icons.music_note,
+  ),
+  _LogIconRule(
+    keywords: ['play', 'toy', 'lego'],
+    icon: Icons.toys,
+  ),
+  _LogIconRule(
+    keywords: ['note', 'journal', 'general', 'other'],
+    icon: Icons.event_note,
+  ),
+];
