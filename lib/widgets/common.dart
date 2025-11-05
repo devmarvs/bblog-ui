@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String label;
@@ -52,4 +53,14 @@ class Section extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget? buildBackButton(BuildContext context) {
+  final router = GoRouter.of(context);
+  if (!router.canPop()) return null;
+  return IconButton(
+    icon: const Icon(Icons.arrow_back),
+    tooltip: 'Back',
+    onPressed: () => router.pop(),
+  );
 }

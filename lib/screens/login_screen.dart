@@ -28,7 +28,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Log in')),
+      appBar: AppBar(
+        leading: buildBackButton(context),
+        title: const Text('Log in'),
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),

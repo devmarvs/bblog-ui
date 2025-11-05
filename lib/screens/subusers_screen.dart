@@ -6,6 +6,7 @@ import '../models/sub_user.dart';
 import '../models/user_type.dart';
 import '../providers/repository_providers.dart';
 import '../providers/auth_providers.dart';
+import '../widgets/common.dart';
 
 class SubUsersScreen extends ConsumerStatefulWidget {
   const SubUsersScreen({super.key});
@@ -61,6 +62,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: buildBackButton(context),
         title: const Text('Babies and Pets'),
         actions: [
           IconButton(
@@ -83,10 +85,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Sub-Users',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('', style: Theme.of(context).textTheme.titleMedium),
                 IconButton(
                   tooltip: 'Refresh',
                   onPressed: (_loading || !hasUser)

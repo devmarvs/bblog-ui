@@ -98,6 +98,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: buildBackButton(context),
         title: const Text('Add Log'),
         actions: [
           IconButton(
@@ -220,6 +221,16 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
                     label: 'Add Activity Log',
                     loading: _submitting,
                     onPressed: canSubmit ? _submit : null,
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: hasUserId
+                          ? () => context.push('/history')
+                          : null,
+                      child: const Text('View history'),
+                    ),
                   ),
                   if (_selectedSubUser != null)
                     Padding(
@@ -604,11 +615,24 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
       return;
     }
 
+    final numericSubUserId =
+        subUser.subUserNumericId ?? int.tryParse(subUser.subUserId.trim());
+    if (numericSubUserId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selected baby or pet is missing a numeric id.'),
+        ),
+      );
+      return;
+    }
+
     setState(() => _submitting = true);
     final repo = ref.read(logsRepositoryProvider);
     final entry = LogEntry(
       userLog: userId,
       subUserId: subUser.subUserId,
+      subUserNumericId: numericSubUserId,
       logTypeId: logType.id,
       logName: logType.name,
       logTime: _logTime,
