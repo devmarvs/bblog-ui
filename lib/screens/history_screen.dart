@@ -23,7 +23,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   String? _subUsersError;
   List<LogEntry>? _logs;
   List<SubUserModel>? _subUsers;
-  SubUserModel? _selectedSubUser;
+  String? _selectedSubUserId;
   String? _lastRequestedUserId;
 
   @override
@@ -37,7 +37,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         setState(() {
           _lastRequestedUserId = null;
           _subUsers = null;
-          _selectedSubUser = null;
+          _selectedSubUserId = null;
           _logs = null;
           _subUsersError = null;
           _logsError = null;
@@ -71,16 +71,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              flex: 1,
-              child: _buildSubUserList(userId),
-            ),
+            _buildSubUserList(userId),
             const SizedBox(height: 12),
-            Expanded(
-              flex: 2,
-              child: _buildLogList(),
-            ),
+            Expanded(child: _buildLogList()),
           ],
         ),
       ),
@@ -89,10 +84,16 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
   Widget _buildSubUserList(String? userId) {
     if (_loadingSubUsers) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
     if (userId == null) {
-      return const Center(child: Text('Sign in to view sub-users.'));
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: Text('Sign in to view sub-users.')),
+      );
     }
     if (_subUsersError != null) {
       return Center(
@@ -117,30 +118,79 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       return const SizedBox.shrink();
     }
     if (_subUsers!.isEmpty) {
-      return const Center(child: Text('No sub-users found.'));
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: Text('No sub-users found.')),
+      );
     }
-    return ListView.separated(
-      itemCount: _subUsers!.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
-      itemBuilder: (_, index) {
-        final subUser = _subUsers![index];
-        final isSelected = _selectedSubUser?.subUserId == subUser.subUserId;
-        return ListTile(
-          title: Text(subUser.name),
-          subtitle: subUser.description != null
-              ? Text(subUser.description!)
-              : null,
-          trailing:
-              isSelected ? const Icon(Icons.check_circle, color: Colors.green) : null,
-          selected: isSelected,
-          onTap: () => _loadLogsFor(subUser),
-        );
-      },
+    final theme = Theme.of(context);
+    return InputDecorator(
+      decoration: const InputDecoration(
+        labelText: 'Select sub-user',
+        border: OutlineInputBorder(),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          value: _selectedSubUserId,
+          hint: const Text('Choose a sub-user'),
+          items: _subUsers!
+              .map(
+                (subUser) => DropdownMenuItem<String>(
+                  value: subUser.subUserId,
+                  child: SizedBox(
+                    height: 48,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          subUser.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        if (subUser.description != null)
+                          Text(
+                            subUser.description!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            final selected = _findSubUserById(value);
+            if (selected != null) {
+              _loadLogsFor(selected);
+            }
+          },
+          selectedItemBuilder: (context) => _subUsers!
+              .map(
+                (subUser) => SizedBox(
+                  height: 48,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      subUser.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+      ),
     );
   }
 
   Widget _buildLogList() {
-    if (_selectedSubUser == null) {
+    final selectedSubUser = _findSubUserById(_selectedSubUserId);
+    if (selectedSubUser == null) {
       return const Center(child: Text('Select a sub-user to view logs.'));
     }
     if (_loadingLogs) {
@@ -160,33 +210,51 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     }
     if (_logs!.isEmpty) {
       return Center(
-        child: Text('No logs found for ${_selectedSubUser!.name}.'),
+        child: Text('No logs found for ${selectedSubUser.name}.'),
       );
     }
-    final formatter = DateFormat.yMd().add_jm();
-    return ListView.separated(
-      itemCount: _logs!.length,
-      separatorBuilder: (_, index) => const Divider(height: 1),
-      itemBuilder: (_, index) {
-        final log = _logs![index];
-        return ListTile(
-          leading: const Icon(Icons.event_note),
-          title: Text(
-            log.logName ?? 'Log #${index + 1} (type ${log.logTypeId})',
+    final Map<DateTime, List<LogEntry>> groupedLogs = {};
+    for (final log in _logs!) {
+      final dayKey = DateTime(log.logTime.year, log.logTime.month, log.logTime.day);
+      groupedLogs.putIfAbsent(dayKey, () => []).add(log);
+    }
+    final dates = groupedLogs.keys.toList()
+      ..sort();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Log history for ${selectedSubUser.name}',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final date in dates)
+                  _buildLogColumn(
+                    context,
+                    date,
+                    groupedLogs[date]!,
+                  ),
+              ],
+            ),
           ),
-          subtitle: Text(log.logDescription ?? ''),
-          trailing: Text(formatter.format(log.logTime)),
-        );
-      },
+        ),
+      ],
     );
   }
 
   Future<void> _loadSubUsers(String userId) async {
+    final previousSubUserId = _selectedSubUserId;
     setState(() {
       _loadingSubUsers = true;
       _subUsersError = null;
       _subUsers = null;
-      _selectedSubUser = null;
+      _selectedSubUserId = null;
       _logs = null;
       _logsError = null;
     });
@@ -194,13 +262,29 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     try {
       final data = await repo.list(userId);
       if (!mounted) return;
-      setState(() => _subUsers = data);
+      SubUserModel? defaultSelection;
+      if (data.isNotEmpty) {
+        defaultSelection = previousSubUserId != null
+            ? data.firstWhere(
+                (subUser) => subUser.subUserId == previousSubUserId,
+                orElse: () => data.first,
+              )
+            : data.first;
+      }
+      setState(() {
+        _subUsers = data;
+        _selectedSubUserId = defaultSelection?.subUserId;
+      });
+      if (defaultSelection != null) {
+        _loadLogsFor(defaultSelection);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _subUsersError = e.toString());
     } finally {
-      if (!mounted) return;
-      setState(() => _loadingSubUsers = false);
+      if (mounted) {
+        setState(() => _loadingSubUsers = false);
+      }
     }
   }
 
@@ -209,14 +293,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     final userId = authState.userId;
     if (userId == null) {
       setState(() {
-        _selectedSubUser = subUser;
+        _selectedSubUserId = subUser.subUserId;
         _logsError = 'Unable to determine user ID.';
         _logs = null;
       });
       return;
     }
     setState(() {
-      _selectedSubUser = subUser;
+      _selectedSubUserId = subUser.subUserId;
       _loadingLogs = true;
       _logsError = null;
       _logs = null;
@@ -234,5 +318,117 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         setState(() => _loadingLogs = false);
       }
     }
+  }
+
+  SubUserModel? _findSubUserById(String? id) {
+    if (id == null) return null;
+    final subUsers = _subUsers;
+    if (subUsers == null) return null;
+    for (final subUser in subUsers) {
+      if (subUser.subUserId == id) {
+        return subUser;
+      }
+    }
+    return null;
+  }
+
+  Widget _buildLogColumn(
+    BuildContext context,
+    DateTime date,
+    List<LogEntry> logs,
+  ) {
+    final dayName = DateFormat('EEE').format(date);
+    final dayNumber = DateFormat('d').format(date);
+    final timeFormat = DateFormat.jm();
+    final sortedLogs = List<LogEntry>.from(logs)
+      ..sort((a, b) => a.logTime.compareTo(b.logTime));
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final cardColor = colorScheme.surfaceContainerHigh;
+
+    return Container(
+      width: 180,
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            dayName,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.primary,
+            ),
+          ),
+          Text(
+            dayNumber,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (int i = 0; i < sortedLogs.length; i++)
+            Padding(
+              padding: EdgeInsets.only(bottom: i == sortedLogs.length - 1 ? 0 : 10),
+              child: _LogEntryTile(
+                title: sortedLogs[i].logName ??
+                    'Log #${i + 1} (type ${sortedLogs[i].logTypeId})',
+                description: sortedLogs[i].logDescription,
+                timeLabel: timeFormat.format(sortedLogs[i].logTime),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LogEntryTile extends StatelessWidget {
+  const _LogEntryTile({
+    required this.title,
+    this.description,
+    required this.timeLabel,
+  });
+
+  final String title;
+  final String? description;
+  final String timeLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          timeLabel,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          title,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (description != null && description!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            description!,
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
+      ],
+    );
   }
 }

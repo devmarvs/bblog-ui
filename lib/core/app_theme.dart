@@ -29,12 +29,6 @@ ThemeData buildTheme(Brightness brightness) {
     surface: isLight ? const Color(0xFFFFFFFF) : const Color(0xFF1B1F29),
     onSurface:
         isLight ? const Color(0xFF1F1A2D) : const Color(0xFFE6E2EF),
-    background:
-        isLight ? const Color(0xFFFCF7F2) : const Color(0xFF151821),
-    onBackground:
-        isLight ? const Color(0xFF201A2D) : const Color(0xFFE6E1EF),
-    surfaceVariant:
-        isLight ? const Color(0xFFE6E2F2) : const Color(0xFF424655),
     onSurfaceVariant:
         isLight ? const Color(0xFF4C4757) : const Color(0xFFC9C4D3),
     outline:
@@ -46,12 +40,14 @@ ThemeData buildTheme(Brightness brightness) {
     inversePrimary:
         isLight ? const Color(0xFF2F6AA5) : const Color(0xFFD0E4FF),
   );
+  final surfaceContainerBase =
+      isLight ? const Color(0xFFE6E2F2) : const Color(0xFF424655);
 
   final base = ThemeData(
     useMaterial3: true,
     brightness: brightness,
     colorScheme: colorScheme,
-    scaffoldBackgroundColor: colorScheme.background,
+    scaffoldBackgroundColor: colorScheme.surface,
     fontFamily: 'Roboto',
   );
 
@@ -69,16 +65,16 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     navigationBarTheme: base.navigationBarTheme.copyWith(
       backgroundColor: colorScheme.surface,
-      indicatorColor: colorScheme.primaryContainer.withOpacity(0.6),
-      labelTextStyle: MaterialStatePropertyAll(
+      indicatorColor: colorScheme.primaryContainer.withValues(alpha: 0.6),
+      labelTextStyle: WidgetStatePropertyAll(
         TextStyle(
           fontWeight: FontWeight.w600,
           color: colorScheme.onSurface,
         ),
       ),
-      iconTheme: MaterialStateProperty.resolveWith(
+      iconTheme: WidgetStateProperty.resolveWith(
         (states) => IconThemeData(
-          color: states.contains(MaterialState.selected)
+          color: states.contains(WidgetState.selected)
               ? colorScheme.primary
               : colorScheme.onSurfaceVariant,
         ),
@@ -95,15 +91,17 @@ ThemeData buildTheme(Brightness brightness) {
     inputDecorationTheme: base.inputDecorationTheme.copyWith(
       filled: true,
       fillColor: isLight
-          ? colorScheme.surfaceVariant.withOpacity(0.4)
-          : colorScheme.surfaceVariant.withOpacity(0.2),
+          ? surfaceContainerBase.withValues(alpha: 0.4)
+          : surfaceContainerBase.withValues(alpha: 0.2),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+        borderSide:
+            BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+        borderSide:
+            BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -111,7 +109,7 @@ ThemeData buildTheme(Brightness brightness) {
       ),
       labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
       hintStyle: TextStyle(
-        color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
       ),
       contentPadding: const EdgeInsets.symmetric(
         vertical: 14,

@@ -288,7 +288,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
         .toList();
     return DropdownButtonFormField<SubUserModel>(
       key: ValueKey(_selectedSubUser?.subUserId ?? 'none'),
-      value: _selectedSubUser,
+      initialValue: _selectedSubUser,
       items: items,
       isExpanded: true,
       selectedItemBuilder: (context) => _subUsers!
@@ -685,9 +685,6 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
 _LogIconRule? _findLogIconRule(LogType type) {
   final name = type.name.toLowerCase();
   for (final rule in _logIconRules) {
-    if (rule.ids != null && rule.ids!.contains(type.id)) {
-      return rule;
-    }
     if (rule.keywords.any(name.contains)) {
       return rule;
     }
@@ -697,13 +694,11 @@ _LogIconRule? _findLogIconRule(LogType type) {
 
 class _LogIconRule {
   final List<String> keywords;
-  final List<int>? ids;
   final IconData? icon;
   final String? emoji;
 
   const _LogIconRule({
     required this.keywords,
-    this.ids,
     this.icon,
     this.emoji,
   });
