@@ -10,10 +10,7 @@ class LogsRepository {
     await dio.post(ApiPaths.subUserLog, data: entry.toJson());
   }
 
-  Future<LogsFetchResult> listBySubUser(
-    String userId,
-    String subUserId,
-  ) async {
+  Future<LogsFetchResult> listBySubUser(String userId, String subUserId) async {
     final res = await dio.get(ApiPaths.subUserLogs(userId, subUserId));
     final raw = res.data;
     final list = _extractLogList(raw);
@@ -27,7 +24,13 @@ class LogsRepository {
   List<dynamic> _extractLogList(dynamic raw) {
     final list = _findList(raw);
     if (list != null) return list;
-    throw const FormatException('Unexpected log response shape.');
+    // When the API returns null/empty payloads for sub-users with no logs,
+    // treat it as an empty collection so the UI can show a friendly message
+    // instead of surfacing a parsing error.
+    if (raw == null) return const [];
+    if (raw is Map && raw.isEmpty) return const [];
+    if (raw is List && raw.isEmpty) return const [];
+    return const [];
   }
 
   List<dynamic>? _findList(dynamic node) {
@@ -43,10 +46,7 @@ class LogsRepository {
 }
 
 class LogsFetchResult {
-  LogsFetchResult({
-    required this.entries,
-    required this.rawResponse,
-  });
+  LogsFetchResult({required this.entries, required this.rawResponse});
 
   final List<LogEntry> entries;
   final dynamic rawResponse;

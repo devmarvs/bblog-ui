@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +25,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   List<SubUserModel>? _subUsers;
   String? _selectedSubUserId;
   String? _lastRequestedUserId;
-  String? _logsResponsePreview;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +41,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           _logs = null;
           _subUsersError = null;
           _logsError = null;
-          _logsResponsePreview = null;
         });
       });
     } else if (userId != null && userId != _lastRequestedUserId) {
@@ -67,8 +63,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           IconButton(
             tooltip: 'Log out',
             icon: const Icon(Icons.logout),
-            onPressed: () =>
-                ref.read(authControllerProvider.notifier).logout(),
+            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
           ),
         ],
       ),
@@ -78,24 +73,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildSubUserList(userId),
-            if (_logsResponsePreview != null) ...[
-              const SizedBox(height: 8),
-              _LogsResponseBox(content: _logsResponsePreview!),
-            ],
             const SizedBox(height: 12),
             Expanded(child: _buildLogList()),
           ],
         ),
       ),
     );
-  }
-
-  String _formatJson(dynamic data) {
-    try {
-      return const JsonEncoder.withIndent('  ').convert(data);
-    } catch (_) {
-      return data.toString();
-    }
   }
 
   Widget _buildSubUserList(String? userId) {
@@ -225,17 +208,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       return const SizedBox.shrink();
     }
     if (_logs!.isEmpty) {
-      return Center(
-        child: Text('No logs found for ${selectedSubUser.name}.'),
+      return Center(child: Text('No logs found for ${selectedSubUser.name}.'));
+    }
+    final sortedLogs = List<LogEntry>.from(_logs!)
+      ..sort(
+        // Most recent logs first for easier scanning in a vertical list.
+        (a, b) => b.logTime.compareTo(a.logTime),
       );
-    }
-    final Map<DateTime, List<LogEntry>> groupedLogs = {};
-    for (final log in _logs!) {
-      final dayKey = DateTime(log.logTime.year, log.logTime.month, log.logTime.day);
-      groupedLogs.putIfAbsent(dayKey, () => []).add(log);
-    }
-    final dates = groupedLogs.keys.toList()
-      ..sort();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -245,19 +224,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         ),
         const SizedBox(height: 12),
         Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final date in dates)
-                  _buildLogColumn(
-                    context,
-                    date,
-                    groupedLogs[date]!,
-                  ),
-              ],
-            ),
+          child: ListView.separated(
+            padding: const EdgeInsets.only(bottom: 16),
+            itemBuilder: (context, index) =>
+                _HistoryLogCard(log: sortedLogs[index]),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemCount: sortedLogs.length,
           ),
         ),
       ],
@@ -273,7 +245,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       _selectedSubUserId = null;
       _logs = null;
       _logsError = null;
-      _logsResponsePreview = null;
     });
     final repo = ref.read(subUserRepositoryProvider);
     try {
@@ -299,7 +270,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       if (!mounted) return;
       setState(() {
         _subUsersError = e.toString();
-        _logsResponsePreview = 'Error loading sub-users: $e';
       });
     } finally {
       if (mounted) {
@@ -316,7 +286,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         _selectedSubUserId = subUser.subUserId;
         _logsError = 'Unable to determine user ID.';
         _logs = null;
-        _logsResponsePreview = 'Unable to determine user ID.';
       });
       return;
     }
@@ -325,7 +294,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       _loadingLogs = true;
       _logsError = null;
       _logs = null;
-      _logsResponsePreview = 'Loading logs...';
     });
     final repo = ref.read(logsRepositoryProvider);
     try {
@@ -333,13 +301,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       if (!mounted) return;
       setState(() {
         _logs = result.entries;
-        _logsResponsePreview = _formatJson(result.rawResponse);
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _logsError = e.toString();
-        _logsResponsePreview = 'Error loading logs: $e';
       });
     } finally {
       if (mounted) {
@@ -359,131 +325,207 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     }
     return null;
   }
-
-  Widget _buildLogColumn(
-    BuildContext context,
-    DateTime date,
-    List<LogEntry> logs,
-  ) {
-    final dayName = DateFormat('EEE').format(date);
-    final dayNumber = DateFormat('d').format(date);
-    final timeFormat = DateFormat.jm();
-    final sortedLogs = List<LogEntry>.from(logs)
-      ..sort((a, b) => a.logTime.compareTo(b.logTime));
-
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final cardColor = colorScheme.surfaceContainerHigh;
-
-    return Container(
-      width: 180,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            dayName,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: colorScheme.primary,
-            ),
-          ),
-          Text(
-            dayNumber,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          for (int i = 0; i < sortedLogs.length; i++)
-            Padding(
-              padding: EdgeInsets.only(bottom: i == sortedLogs.length - 1 ? 0 : 10),
-              child: _LogEntryTile(
-                title: sortedLogs[i].logName ??
-                    'Log #${i + 1} (type ${sortedLogs[i].logTypeId})',
-                description: sortedLogs[i].logDescription,
-                timeLabel: timeFormat.format(sortedLogs[i].logTime),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 }
 
-class _LogEntryTile extends StatelessWidget {
-  const _LogEntryTile({
-    required this.title,
-    this.description,
-    required this.timeLabel,
-  });
+class _HistoryLogCard extends StatelessWidget {
+  const _HistoryLogCard({required this.log});
 
-  final String title;
-  final String? description;
-  final String timeLabel;
+  final LogEntry log;
+
+  static final DateFormat _timeFormat = DateFormat.yMMMEd()
+      .add_jm(); // e.g. Jan 2, 2024 8:30 PM
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final metadata = _metadataForLog(log);
+    final description = log.logDescription?.trim();
+    final hasDescription = description != null && description.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: colorScheme.primary.withValues(alpha: 0.15),
+                child: metadata.emoji != null
+                    ? Text(
+                        metadata.emoji!,
+                        style: TextStyle(
+                          fontSize: 24,
+                          color: colorScheme.primary,
+                        ),
+                      )
+                    : Icon(metadata.icon, color: colorScheme.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Log type',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    Text(
+                      metadata.label,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _LogDetailRow(
+            label: 'Log time',
+            value: _timeFormat.format(log.logTime),
+          ),
+          const SizedBox(height: 12),
+          _LogDetailRow(
+            label: 'Log description',
+            value: hasDescription ? description! : 'No description provided',
+            muted: !hasDescription,
+          ),
+        ],
+      ),
+    );
+  }
+
+  static _LogTypeMetadata _metadataForLog(LogEntry log) {
+    final label = _resolveLogLabel(log);
+    final normalized = label.toLowerCase();
+    final keywordMatch = _metadataFromKeywords(label, normalized);
+    if (keywordMatch != null) {
+      return keywordMatch;
+    }
+    switch (log.logTypeId) {
+      case 1:
+        return _LogTypeMetadata(label: label, icon: Icons.local_drink);
+      case 2:
+        return _LogTypeMetadata(
+          label: label,
+          icon: Icons.baby_changing_station,
+        );
+      case 3:
+        return _LogTypeMetadata(label: label, icon: Icons.bedtime);
+      case 4:
+        return _LogTypeMetadata(label: label, icon: Icons.shower);
+      case 5:
+        return _LogTypeMetadata(label: label, icon: Icons.medical_services);
+      default:
+        return _LogTypeMetadata(label: label, icon: Icons.event_note);
+    }
+  }
+
+  static String _resolveLogLabel(LogEntry log) {
+    final custom = log.logName?.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+    return _defaultLogTypeNames[log.logTypeId] ?? 'Log Type ${log.logTypeId}';
+  }
+
+  static _LogTypeMetadata? _metadataFromKeywords(
+    String label,
+    String normalized,
+  ) {
+    if (_matches(normalized, const ['poop', 'poo', 'bm', 'bowel', 'stool'])) {
+      return _LogTypeMetadata(label: label, emoji: '💩');
+    }
+    if (_matches(normalized, const ['pee', 'urine', 'wet'])) {
+      return _LogTypeMetadata(label: label, icon: Icons.water_drop);
+    }
+    if (_matches(normalized, const ['diaper', 'nappy', 'change'])) {
+      return _LogTypeMetadata(label: label, icon: Icons.baby_changing_station);
+    }
+    if (_matches(normalized, const ['milk', 'feed', 'bottle', 'nurse'])) {
+      return _LogTypeMetadata(label: label, icon: Icons.local_drink);
+    }
+    if (_matches(normalized, const ['sleep', 'nap', 'rest'])) {
+      return _LogTypeMetadata(label: label, icon: Icons.bedtime);
+    }
+    if (_matches(normalized, const ['bath', 'shower', 'wash'])) {
+      return _LogTypeMetadata(label: label, icon: Icons.shower);
+    }
+    if (_matches(normalized, const ['med', 'medicine', 'vitamin'])) {
+      return _LogTypeMetadata(label: label, icon: Icons.medical_services);
+    }
+    return null;
+  }
+
+  static bool _matches(String normalized, List<String> keywords) {
+    return keywords.any((keyword) => normalized.contains(keyword));
+  }
+}
+
+class _LogTypeMetadata {
+  const _LogTypeMetadata({required this.label, this.icon, this.emoji})
+    : assert(icon != null || emoji != null);
+
+  final String label;
+  final IconData? icon;
+  final String? emoji;
+}
+
+class _LogDetailRow extends StatelessWidget {
+  const _LogDetailRow({
+    required this.label,
+    required this.value,
+    this.muted = false,
+  });
+
+  final String label;
+  final String value;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          timeLabel,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          title,
-          style: theme.textTheme.bodyMedium?.copyWith(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            letterSpacing: 0.2,
             fontWeight: FontWeight.w600,
           ),
         ),
-        if (description != null && description!.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(
-            description!,
-            style: theme.textTheme.bodySmall,
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: muted ? colorScheme.onSurfaceVariant : null,
           ),
-        ],
+        ),
       ],
     );
   }
 }
 
-class _LogsResponseBox extends StatelessWidget {
-  const _LogsResponseBox({required this.content});
-
-  final String content;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
-      child: SelectableText(
-        content,
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontFamily: 'RobotoMono',
-        ),
-      ),
-    );
-  }
-}
+const Map<int, String> _defaultLogTypeNames = {
+  1: 'Feeding',
+  2: 'Diaper Change',
+  3: 'Sleep',
+  4: 'Bath',
+  5: 'Medication',
+};
