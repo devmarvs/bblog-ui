@@ -150,6 +150,12 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
           subtitle: (item.description != null && item.description!.isNotEmpty)
               ? Text(item.description!)
               : null,
+          trailing: const Icon(Icons.history),
+          onTap: () {
+            final destination =
+                '/history?subUserId=${Uri.encodeComponent(item.subUserId)}';
+            context.push(destination);
+          },
         );
       },
     );

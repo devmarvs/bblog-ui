@@ -32,7 +32,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, _) => const SubUsersScreen(),
       ),
       GoRoute(path: '/add-log', builder: (context, _) => const AddLogScreen()),
-      GoRoute(path: '/history', builder: (context, _) => const HistoryScreen()),
+      GoRoute(
+        path: '/history',
+        builder: (context, state) => HistoryScreen(
+          initialSubUserId: state.uri.queryParameters['subUserId'],
+        ),
+      ),
       GoRoute(path: '/profile', builder: (context, _) => const ProfileScreen()),
     ],
   );

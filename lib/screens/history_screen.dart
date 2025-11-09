@@ -10,7 +10,9 @@ import '../providers/repository_providers.dart';
 import '../widgets/common.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
-  const HistoryScreen({super.key});
+  const HistoryScreen({super.key, this.initialSubUserId});
+
+  final String? initialSubUserId;
 
   @override
   ConsumerState<HistoryScreen> createState() => _HistoryScreenState();
@@ -25,6 +27,21 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   List<SubUserModel>? _subUsers;
   String? _selectedSubUserId;
   String? _lastRequestedUserId;
+  String? _initialSubUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialSubUserId = widget.initialSubUserId;
+  }
+
+  @override
+  void didUpdateWidget(covariant HistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialSubUserId != oldWidget.initialSubUserId) {
+      _initialSubUserId = widget.initialSubUserId;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +58,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           _logs = null;
           _subUsersError = null;
           _logsError = null;
+          _initialSubUserId = widget.initialSubUserId;
         });
       });
     } else if (userId != null && userId != _lastRequestedUserId) {
@@ -238,6 +256,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
   Future<void> _loadSubUsers(String userId) async {
     final previousSubUserId = _selectedSubUserId;
+    final pendingInitialSelection = _initialSubUserId;
     setState(() {
       _loadingSubUsers = true;
       _subUsersError = null;
@@ -252,16 +271,22 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       if (!mounted) return;
       SubUserModel? defaultSelection;
       if (data.isNotEmpty) {
-        defaultSelection = previousSubUserId != null
-            ? data.firstWhere(
-                (subUser) => subUser.subUserId == previousSubUserId,
-                orElse: () => data.first,
-              )
-            : data.first;
+        final desiredId = previousSubUserId ?? pendingInitialSelection;
+        if (desiredId != null) {
+          defaultSelection = data.firstWhere(
+            (subUser) => subUser.subUserId == desiredId,
+            orElse: () => data.first,
+          );
+        } else {
+          defaultSelection = data.first;
+        }
       }
       setState(() {
         _subUsers = data;
         _selectedSubUserId = defaultSelection?.subUserId;
+        if (_selectedSubUserId == pendingInitialSelection) {
+          _initialSubUserId = null;
+        }
       });
       if (defaultSelection != null) {
         _loadLogsFor(defaultSelection);
