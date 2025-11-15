@@ -35,4 +35,33 @@ class AuthRepository {
       },
     );
   }
+
+  Future<void> requestEmailVerification({required String email}) async {
+    await dio.post(ApiPaths.emailVerificationRequest, data: {'email': email});
+  }
+
+  Future<void> confirmEmailVerification({
+    required String email,
+    required String verificationCode,
+  }) async {
+    await dio.post(
+      ApiPaths.emailVerificationConfirm,
+      data: {'email': email, 'code': verificationCode},
+    );
+  }
+
+  Future<void> requestPasswordReset({required String email}) async {
+    await dio.post(ApiPaths.passwordForgot, data: {'email': email});
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String verificationCode,
+    required String newPassword,
+  }) async {
+    await dio.post(
+      ApiPaths.passwordReset,
+      data: {'email': email, 'code': verificationCode, 'password': newPassword},
+    );
+  }
 }

@@ -55,17 +55,17 @@ class AuthController extends Notifier<AuthState> {
     final token = await _storage.read();
     if (!ref.mounted) return;
     final storedUserId = await _storage.readUserId();
-    final derivedUserId =
-        token != null ? _extractUserId(token) : null;
-    state = AuthState(
-      token: token,
-      userId: storedUserId ?? derivedUserId,
-    );
+    final derivedUserId = token != null ? _extractUserId(token) : null;
+    state = AuthState(token: token, userId: storedUserId ?? derivedUserId);
   }
 
   Future<void> login(String email, String password) async {
-    state =
-        state.copyWith(token: null, userId: null, loading: true, error: null);
+    state = state.copyWith(
+      token: null,
+      userId: null,
+      loading: true,
+      error: null,
+    );
     try {
       final res = await _repo.login(email: email, password: password);
       await _storage.save(res.token);
@@ -85,15 +85,19 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  Future<void> signup({
+  Future<bool> signup({
     required String username,
     required String email,
     required String password,
     String? phone,
     String? country,
   }) async {
-    state =
-        state.copyWith(token: null, userId: null, loading: true, error: null);
+    state = state.copyWith(
+      token: null,
+      userId: null,
+      loading: true,
+      error: null,
+    );
     try {
       await _repo.signup(
         username: username,
@@ -102,13 +106,16 @@ class AuthController extends Notifier<AuthState> {
         phone: phone,
         country: country,
       );
-      await login(email, password);
+      state = const AuthState(token: null, userId: null);
+      return true;
     } on DioException catch (e) {
       final message =
           e.response?.data?.toString() ?? e.message ?? 'Failed to sign up';
       state = AuthState(token: null, userId: null, error: message);
+      return false;
     } catch (e) {
       state = AuthState(token: null, userId: null, error: e.toString());
+      return false;
     }
   }
 

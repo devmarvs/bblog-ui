@@ -27,8 +27,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final logoAsset = isDark
         ? 'lib/assets/images/Baby_Logs_Logo_Happy_dark.png'
         : 'lib/assets/images/Baby_Logs_Logo_Happy_light.png';
@@ -47,10 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset(
-                    logoAsset,
-                    height: 120,
-                  ),
+                  Image.asset(logoAsset, height: 120),
                   const SizedBox(height: 24),
                   TextFormField(
                     controller: _emailCtrl,
@@ -77,6 +73,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             .login(_emailCtrl.text.trim(), _pwCtrl.text);
                       }
                     },
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () {
+                      final email = _emailCtrl.text.trim();
+                      final uri = Uri(
+                        path: '/forgot-password',
+                        queryParameters: email.isEmpty
+                            ? null
+                            : {'email': email},
+                      );
+                      context.go(uri.toString());
+                    },
+                    child: const Text('Forgot password?'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      final email = _emailCtrl.text.trim();
+                      final uri = Uri(
+                        path: '/verify-email',
+                        queryParameters: email.isEmpty
+                            ? null
+                            : {'email': email},
+                      );
+                      context.go(uri.toString());
+                    },
+                    child: const Text('Need to verify your email?'),
                   ),
                   const SizedBox(height: 8),
                   TextButton(

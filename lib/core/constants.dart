@@ -2,6 +2,12 @@ class ApiPaths {
   static const String base = '/bblog';
   static const String login = '$base/login';
   static const String userCreate = '$base/user/create';
+  static const String emailVerificationRequest =
+      '$base/user/verify-email/request';
+  static const String emailVerificationConfirm =
+      '$base/user/verify-email/confirm';
+  static const String passwordForgot = '$base/user/password/forgot';
+  static const String passwordReset = '$base/user/password/reset';
   static String user(String id) => '$base/user/$id';
   static String userSubUsers(String userId) => '$base/user/$userId/subuser';
   static const String subUserLog = '$base/subuser/log';

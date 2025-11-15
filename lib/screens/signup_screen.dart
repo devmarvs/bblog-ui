@@ -93,7 +93,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       loading: auth.loading,
                       onPressed: () async {
                         if (_formKey.currentState!.validate()) {
-                          await ref
+                          final success = await ref
                               .read(authControllerProvider.notifier)
                               .signup(
                                 username: _username.text.trim(),
@@ -106,6 +106,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                     ? null
                                     : _phone.text.trim(),
                               );
+                          if (!mounted) return;
+                          if (success) {
+                            final email = _email.text.trim();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Verification email sent to $email',
+                                ),
+                              ),
+                            );
+                            context.go(
+                              Uri(
+                                path: '/verify-email',
+                                queryParameters: {'email': email},
+                              ).toString(),
+                            );
+                          }
                         }
                       },
                     ),
