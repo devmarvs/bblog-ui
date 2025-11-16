@@ -1,8 +1,8 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/error_message.dart';
 import '../providers/auth_providers.dart';
 import '../widgets/common.dart';
 
@@ -164,17 +164,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _error = _messageForError(e);
+        _error = friendlyErrorMessage(e);
       });
     }
-  }
-
-  String _messageForError(Object error) {
-    if (error is DioException) {
-      return error.response?.data?.toString() ??
-          error.message ??
-          'Request failed';
-    }
-    return error.toString();
   }
 }

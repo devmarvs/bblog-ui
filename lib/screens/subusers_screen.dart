@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/error_message.dart';
 import '../models/sub_user.dart';
 import '../models/user_type.dart';
 import '../providers/repository_providers.dart';
@@ -184,7 +185,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
       setState(() => _items = data);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() => _error = friendlyErrorMessage(e));
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -307,7 +308,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(e))));
       }
     }
 
@@ -331,7 +332,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
       if (!mounted) return;
       setState(() {
         _userTypes = null;
-        _userTypeError = e.toString();
+        _userTypeError = friendlyErrorMessage(e);
       });
     } finally {
       if (mounted) {

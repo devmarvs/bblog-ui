@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/dio_client.dart';
+import '../core/error_message.dart';
 import '../core/storage/token_storage.dart';
 import '../repositories/auth_repository.dart';
 
@@ -77,11 +78,14 @@ class AuthController extends Notifier<AuthState> {
       }
       state = AuthState(token: res.token, userId: userId);
     } on DioException catch (e) {
-      final message =
-          e.response?.data?.toString() ?? e.message ?? 'Failed to log in';
+      final message = friendlyErrorMessage(e, fallback: 'Failed to log in');
       state = AuthState(token: null, userId: null, error: message);
     } catch (e) {
-      state = AuthState(token: null, userId: null, error: e.toString());
+      state = AuthState(
+        token: null,
+        userId: null,
+        error: friendlyErrorMessage(e, fallback: 'Failed to log in'),
+      );
     }
   }
 
@@ -109,12 +113,15 @@ class AuthController extends Notifier<AuthState> {
       state = const AuthState(token: null, userId: null);
       return true;
     } on DioException catch (e) {
-      final message =
-          e.response?.data?.toString() ?? e.message ?? 'Failed to sign up';
+      final message = friendlyErrorMessage(e, fallback: 'Failed to sign up');
       state = AuthState(token: null, userId: null, error: message);
       return false;
     } catch (e) {
-      state = AuthState(token: null, userId: null, error: e.toString());
+      state = AuthState(
+        token: null,
+        userId: null,
+        error: friendlyErrorMessage(e, fallback: 'Failed to sign up'),
+      );
       return false;
     }
   }

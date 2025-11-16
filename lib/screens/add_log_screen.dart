@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../core/error_message.dart';
 import '../models/log_entry.dart';
 import '../models/log_type.dart';
 import '../models/sub_user.dart';
@@ -139,7 +140,11 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
             FilledButton.icon(
               icon: const Icon(Icons.person_add_alt_1),
               label: const Text('Add a baby or pet'),
-              onPressed: (!hasUserId || _loadingSubUsers || _submitting || _loadingUserTypes)
+              onPressed:
+                  (!hasUserId ||
+                      _loadingSubUsers ||
+                      _submitting ||
+                      _loadingUserTypes)
                   ? null
                   : _showCreateDialog,
             ),
@@ -303,9 +308,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
         if (sub == null) return;
         setState(() => _selectedSubUser = sub);
       },
-      decoration: const InputDecoration(
-        labelText: 'Select baby or pet',
-      ),
+      decoration: const InputDecoration(labelText: 'Select baby or pet'),
     );
   }
 
@@ -362,7 +365,8 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _logTypeError = 'Using default log types. Error: $e';
+        final friendly = friendlyErrorMessage(e);
+        _logTypeError = 'Using default log types. $friendly';
         _logTypes = _fallbackLogTypes;
         _selectedLogType ??= _fallbackLogTypes.first;
       });
@@ -390,7 +394,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
       if (!mounted) return;
       setState(() {
         _userTypes = null;
-        _userTypeError = e.toString();
+        _userTypeError = friendlyErrorMessage(e);
       });
     } finally {
       if (mounted) {
@@ -439,7 +443,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _subUserError = e.toString();
+        _subUserError = friendlyErrorMessage(e);
         _subUsers = null;
         _selectedSubUser = null;
       });
@@ -485,9 +489,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     final userId = ref.read(authControllerProvider).userId ?? '';
     if (userId.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Unable to add sub-user without a valid account.'),
         ),
@@ -501,9 +503,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     if (!mounted) return;
 
     if (_userTypes == null || _userTypes!.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Unable to load sub-user types. Try again later.'),
         ),
@@ -536,7 +536,8 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
                         ),
                       )
                       .toList(),
-                  onChanged: (value) => setStateDialog(() => selectedType = value),
+                  onChanged: (value) =>
+                      setStateDialog(() => selectedType = value),
                   decoration: const InputDecoration(labelText: 'Type'),
                   validator: (value) => value == null ? 'Select a type' : null,
                 ),
@@ -544,10 +545,9 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
                 TextFormField(
                   controller: nameCtrl,
                   decoration: const InputDecoration(labelText: 'Name'),
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty)
-                          ? 'Enter a name'
-                          : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Enter a name'
+                      : null,
                 ),
               ],
             ),
@@ -593,7 +593,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(e))));
     } finally {
       nameCtrl.dispose();
     }
@@ -652,7 +652,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(e))));
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -697,11 +697,7 @@ class _LogIconRule {
   final IconData? icon;
   final String? emoji;
 
-  const _LogIconRule({
-    required this.keywords,
-    this.icon,
-    this.emoji,
-  });
+  const _LogIconRule({required this.keywords, this.icon, this.emoji});
 }
 
 const List<_LogIconRule> _logIconRules = [
@@ -713,18 +709,12 @@ const List<_LogIconRule> _logIconRules = [
     keywords: ['pee', 'urine', 'wet', 'potty'],
     icon: Icons.water_drop,
   ),
-  _LogIconRule(
-    keywords: ['milk', 'bottle', 'formula'],
-    emoji: '🍼',
-  ),
+  _LogIconRule(keywords: ['milk', 'bottle', 'formula'], emoji: '🍼'),
   _LogIconRule(
     keywords: ['feed', 'meal', 'food', 'nurse', 'latch'],
     icon: Icons.restaurant,
   ),
-  _LogIconRule(
-    keywords: ['pump', 'pumping'],
-    icon: Icons.local_drink,
-  ),
+  _LogIconRule(keywords: ['pump', 'pumping'], icon: Icons.local_drink),
   _LogIconRule(
     keywords: ['sleep', 'nap', 'bed', 'rest', 'doze'],
     icon: Icons.bedtime,
@@ -753,22 +743,10 @@ const List<_LogIconRule> _logIconRules = [
     keywords: ['walk', 'exercise', 'run', 'outside', 'play', 'park'],
     icon: Icons.directions_walk,
   ),
-  _LogIconRule(
-    keywords: ['teeth', 'brush', 'dental'],
-    icon: Icons.brush,
-  ),
-  _LogIconRule(
-    keywords: ['story', 'read', 'book'],
-    icon: Icons.menu_book,
-  ),
-  _LogIconRule(
-    keywords: ['music', 'song', 'sing'],
-    icon: Icons.music_note,
-  ),
-  _LogIconRule(
-    keywords: ['play', 'toy', 'lego'],
-    icon: Icons.toys,
-  ),
+  _LogIconRule(keywords: ['teeth', 'brush', 'dental'], icon: Icons.brush),
+  _LogIconRule(keywords: ['story', 'read', 'book'], icon: Icons.menu_book),
+  _LogIconRule(keywords: ['music', 'song', 'sing'], icon: Icons.music_note),
+  _LogIconRule(keywords: ['play', 'toy', 'lego'], icon: Icons.toys),
   _LogIconRule(
     keywords: ['note', 'journal', 'general', 'other'],
     icon: Icons.event_note,
