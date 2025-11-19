@@ -12,69 +12,22 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _HelpAction {
-  const _HelpAction({
-    required this.label,
-    required this.icon,
-    required this.path,
-    this.description,
-    this.includeEmail = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final String path;
-  final String? description;
-  final bool includeEmail;
-
-  String route(String email) {
-    if (!includeEmail || email.isEmpty) {
-      return path;
-    }
-    return Uri(path: path, queryParameters: {'email': email}).toString();
-  }
-}
-
-const List<_HelpAction> _helpActions = [
-  _HelpAction(
-    label: 'Forgot password',
-    icon: Icons.lock_reset,
-    path: '/forgot-password',
-    description: 'Send a reset link to your inbox.',
-    includeEmail: true,
-  ),
-  _HelpAction(
-    label: 'Verify email',
-    icon: Icons.mark_email_unread_outlined,
-    path: '/verify-email',
-    description: 'Resend your verification email.',
-    includeEmail: true,
-  ),
-  _HelpAction(
-    label: 'Create an account',
-    icon: Icons.person_add_alt,
-    path: '/signup',
-    description: 'Need an account? Start here.',
-  ),
-];
-
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _pwCtrl = TextEditingController();
-  final SearchController _helpSearchController = SearchController();
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _pwCtrl.dispose();
-    _helpSearchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
+    final errorText = auth.error;
     return Scaffold(
       appBar: AppBar(
         leading: buildBackButton(context),
@@ -125,6 +78,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       validator: (v) =>
                           (v == null || v.isEmpty) ? 'Enter password' : null,
                     ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .errorContainer
+                              .withValues(alpha: 0.8),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          errorText,
+                          style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onErrorContainer,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     PrimaryButton(
                       label: 'Log in',
@@ -138,59 +114,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    SearchAnchor.bar(
-                      searchController: _helpSearchController,
-                      barHintText: 'Need help? Try searching…',
-                      viewHintText: 'Search help actions',
-                      suggestionsBuilder: (context, controller) {
-                        final query = controller.text.trim().toLowerCase();
-                        final matches = _helpActions.where(
-                          (action) =>
-                              query.isEmpty ||
-                              action.label.toLowerCase().contains(query) ||
-                              (action.description != null &&
-                                  action.description!
-                                      .toLowerCase()
-                                      .contains(query)),
+                    TextButton(
+                      onPressed: () {
+                        final email = _emailCtrl.text.trim();
+                        final uri = Uri(
+                          path: '/forgot-password',
+                          queryParameters:
+                              email.isEmpty ? null : {'email': email},
                         );
-                        final results = matches.toList();
-                        if (results.isEmpty) {
-                          return [
-                            const ListTile(
-                              leading: Icon(Icons.search_off),
-                              title: Text('No help topics match'),
-                              subtitle: Text('Try a different search term.'),
-                            ),
-                          ];
-                        }
-                        return results.map(
-                          (action) => ListTile(
-                            leading: Icon(action.icon),
-                            title: Text(action.label),
-                            subtitle: action.description == null
-                                ? null
-                                : Text(action.description!),
-                            onTap: () {
-                              controller.closeView(action.label);
-                              final email = _emailCtrl.text.trim();
-                              context.go(action.route(email));
-                            },
-                          ),
-                        );
+                        context.go(uri.toString());
                       },
+                      child: const Text('Forgot password?'),
                     ),
-                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () {
+                        final email = _emailCtrl.text.trim();
+                        final uri = Uri(
+                          path: '/verify-email',
+                          queryParameters:
+                              email.isEmpty ? null : {'email': email},
+                        );
+                        context.go(uri.toString());
+                      },
+                      child: const Text('Need to verify your email?'),
+                    ),
+                    const SizedBox(height: 8),
                     TextButton(
                       onPressed: () => context.go('/signup'),
                       child: const Text('Create an account'),
                     ),
-                    if (auth.error != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        auth.error!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ],
                   ],
                 ),
               ),

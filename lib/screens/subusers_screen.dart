@@ -146,6 +146,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: buildAppNavigationBar(context, currentIndex: 1),
     );
   }
 

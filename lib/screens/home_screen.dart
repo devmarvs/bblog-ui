@@ -142,32 +142,7 @@ class HomeScreen extends ConsumerWidget {
           if (constraints.maxWidth >= 900) {
             return const SizedBox.shrink();
           }
-          return NavigationBar(
-            selectedIndex: 0,
-            onDestinationSelected: handleDestination,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                label: 'Home',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.group_outlined),
-                label: 'Pets/Babies',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.add_circle_outline),
-                label: 'Add Log',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.history),
-                label: 'History',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.person_outline),
-                label: 'Profile',
-              ),
-            ],
-          );
+          return buildAppNavigationBar(context, currentIndex: 0);
         },
       ),
     );

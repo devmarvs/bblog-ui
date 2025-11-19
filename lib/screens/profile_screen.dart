@@ -90,6 +90,7 @@ class ProfileScreen extends ConsumerWidget {
           ],
         ),
       ),
+      bottomNavigationBar: buildAppNavigationBar(context, currentIndex: 4),
     );
   }
 }

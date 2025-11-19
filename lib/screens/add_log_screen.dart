@@ -307,6 +307,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: buildAppNavigationBar(context, currentIndex: 2),
     );
   }
 

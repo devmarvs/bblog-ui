@@ -14,11 +14,13 @@ import '../screens/signup_screen.dart';
 import '../screens/subusers_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authControllerProvider);
+  final token = ref.watch(
+    authControllerProvider.select((state) => state.token),
+  );
   return GoRouter(
     initialLocation: '/home',
     redirect: (context, state) {
-      final loggedIn = authState.token != null;
+      final loggedIn = token != null;
       final location = state.uri.path;
       const publicRoutes = {
         '/login',

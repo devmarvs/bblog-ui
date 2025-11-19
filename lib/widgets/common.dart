@@ -190,3 +190,49 @@ class OverflowMenuButton extends StatelessWidget {
     );
   }
 }
+
+NavigationBar buildAppNavigationBar(
+  BuildContext context, {
+  required int currentIndex,
+}) {
+  void handleSelection(int index) {
+    switch (index) {
+      case 0:
+        context.go('/home');
+        break;
+      case 1:
+        context.go('/subusers');
+        break;
+      case 2:
+        context.go('/add-log');
+        break;
+      case 3:
+        context.go('/history');
+        break;
+      case 4:
+        context.go('/profile');
+        break;
+    }
+  }
+
+  return NavigationBar(
+    selectedIndex: currentIndex,
+    onDestinationSelected: handleSelection,
+    destinations: const [
+      NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
+      NavigationDestination(
+        icon: Icon(Icons.group_outlined),
+        label: 'Pets/Babies',
+      ),
+      NavigationDestination(
+        icon: Icon(Icons.add_circle_outline),
+        label: 'Add Log',
+      ),
+      NavigationDestination(icon: Icon(Icons.history), label: 'History'),
+      NavigationDestination(
+        icon: Icon(Icons.person_outline),
+        label: 'Profile',
+      ),
+    ],
+  );
+}

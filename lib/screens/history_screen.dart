@@ -148,6 +148,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: buildAppNavigationBar(context, currentIndex: 3),
     );
   }
 
