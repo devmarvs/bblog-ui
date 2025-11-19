@@ -12,6 +12,56 @@ class SignupScreen extends ConsumerStatefulWidget {
   ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
+enum AccountRole { parent, caregiver, supporter }
+
+extension on AccountRole {
+  String get label {
+    switch (this) {
+      case AccountRole.parent:
+        return 'Parent';
+      case AccountRole.caregiver:
+        return 'Caregiver';
+      case AccountRole.supporter:
+        return 'Support crew';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case AccountRole.parent:
+        return Icons.family_restroom;
+      case AccountRole.caregiver:
+        return Icons.volunteer_activism;
+      case AccountRole.supporter:
+        return Icons.groups_2;
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case AccountRole.parent:
+        return 'Full access for primary guardians.';
+      case AccountRole.caregiver:
+        return 'Hands-on support role with logging access.';
+      case AccountRole.supporter:
+        return 'View-only helpers who cheer from afar.';
+    }
+  }
+}
+
+const List<String> _countryOptions = [
+  'United States',
+  'Canada',
+  'United Kingdom',
+  'Australia',
+  'Germany',
+  'France',
+  'Brazil',
+  'India',
+  'Japan',
+  'Other',
+];
+
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _username = TextEditingController();
@@ -19,6 +69,27 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _password = TextEditingController();
   final _country = TextEditingController();
   final _phone = TextEditingController();
+  AccountRole _role = AccountRole.parent;
+
+  List<ButtonSegment<AccountRole>> get _roleSegments =>
+      AccountRole.values
+          .map(
+            (role) => ButtonSegment<AccountRole>(
+              value: role,
+              icon: Icon(role.icon),
+              label: Text(role.label),
+            ),
+          )
+          .toList();
+
+  final List<DropdownMenuEntry<String>> _countryEntries = _countryOptions
+      .map(
+        (country) => DropdownMenuEntry<String>(
+          value: country == 'Other' ? '' : country,
+          label: country,
+        ),
+      )
+      .toList();
 
   @override
   void dispose() {
@@ -33,14 +104,26 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
+    final roleDescription = _role.description;
     return Scaffold(
       appBar: AppBar(
         leading: buildBackButton(context),
         title: const Text('Create account'),
+        actions: [
+          OverflowMenuButton(
+            actions: [
+              OverflowAction(
+                label: 'Log in',
+                icon: Icons.login,
+                onPressed: () => context.go('/login'),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: const BoxConstraints(maxWidth: 520),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: SingleChildScrollView(
@@ -50,6 +133,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    SegmentedButton<AccountRole>(
+                      segments: _roleSegments,
+                      selected: <AccountRole>{_role},
+                      showSelectedIcon: false,
+                      onSelectionChanged: (selection) {
+                        if (selection.isEmpty) return;
+                        setState(() => _role = selection.first);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      roleDescription,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 24),
                     TextFormField(
                       controller: _username,
                       decoration: const InputDecoration(labelText: 'Username'),
@@ -73,11 +174,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           (v == null || v.isEmpty) ? 'Enter password' : null,
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
+                    DropdownMenu<String>(
                       controller: _country,
-                      decoration: const InputDecoration(
-                        labelText: 'Country (optional)',
-                      ),
+                      label: const Text('Country (optional)'),
+                      dropdownMenuEntries: _countryEntries,
+                      leadingIcon: const Icon(Icons.public),
+                      enableFilter: true,
+                      enableSearch: true,
+                      requestFocusOnTap: true,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -92,37 +196,36 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       label: 'Create account',
                       loading: auth.loading,
                       onPressed: () async {
-                        if (_formKey.currentState!.validate()) {
-                          final success = await ref
-                              .read(authControllerProvider.notifier)
-                              .signup(
-                                username: _username.text.trim(),
-                                email: _email.text.trim(),
-                                password: _password.text,
-                                country: _country.text.isEmpty
-                                    ? null
-                                    : _country.text.trim(),
-                                phone: _phone.text.isEmpty
-                                    ? null
-                                    : _phone.text.trim(),
-                              );
-                          if (!mounted) return;
-                          if (success) {
-                            final email = _email.text.trim();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Verification email sent to $email',
-                                ),
-                              ),
+                        if (!_formKey.currentState!.validate()) {
+                          return;
+                        }
+                        final success = await ref
+                            .read(authControllerProvider.notifier)
+                            .signup(
+                              username: _username.text.trim(),
+                              email: _email.text.trim(),
+                              password: _password.text,
+                              country: _country.text.isEmpty
+                                  ? null
+                                  : _country.text.trim(),
+                              phone: _phone.text.isEmpty
+                                  ? null
+                                  : _phone.text.trim(),
                             );
-                            context.go(
-                              Uri(
-                                path: '/verify-email',
-                                queryParameters: {'email': email},
-                              ).toString(),
-                            );
-                          }
+                        if (!context.mounted) return;
+                        if (success) {
+                          final email = _email.text.trim();
+                          final snackText =
+                              'Thanks, ${_role.label}! Verification email sent to $email';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(snackText)),
+                          );
+                          context.go(
+                            Uri(
+                              path: '/verify-email',
+                              queryParameters: {'email': email},
+                            ).toString(),
+                          );
                         }
                       },
                     ),

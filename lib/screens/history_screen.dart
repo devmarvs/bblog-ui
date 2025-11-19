@@ -10,6 +10,31 @@ import '../providers/auth_providers.dart';
 import '../providers/repository_providers.dart';
 import '../widgets/common.dart';
 
+enum HistoryRange { day, week, month, all }
+
+const List<ButtonSegment<HistoryRange>> _historyRangeSegments = [
+  ButtonSegment<HistoryRange>(
+    value: HistoryRange.day,
+    icon: Icon(Icons.wb_sunny_outlined),
+    label: Text('24h'),
+  ),
+  ButtonSegment<HistoryRange>(
+    value: HistoryRange.week,
+    icon: Icon(Icons.calendar_view_week),
+    label: Text('7d'),
+  ),
+  ButtonSegment<HistoryRange>(
+    value: HistoryRange.month,
+    icon: Icon(Icons.calendar_view_month),
+    label: Text('30d'),
+  ),
+  ButtonSegment<HistoryRange>(
+    value: HistoryRange.all,
+    icon: Icon(Icons.all_inclusive),
+    label: Text('All'),
+  ),
+];
+
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key, this.initialSubUserId});
 
@@ -29,11 +54,16 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   String? _selectedSubUserId;
   String? _lastRequestedUserId;
   String? _initialSubUserId;
+  final TextEditingController _subUserFieldController = TextEditingController();
+  final SearchController _searchController = SearchController();
+  final ScrollController _logScrollController = ScrollController();
+  HistoryRange _range = HistoryRange.week;
 
   @override
   void initState() {
     super.initState();
     _initialSubUserId = widget.initialSubUserId;
+    _searchController.addListener(_handleSearchChanged);
   }
 
   @override
@@ -42,6 +72,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     if (widget.initialSubUserId != oldWidget.initialSubUserId) {
       _initialSubUserId = widget.initialSubUserId;
     }
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_handleSearchChanged);
+    _searchController.dispose();
+    _subUserFieldController.dispose();
+    _logScrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -69,20 +108,28 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       });
     }
 
+    final filterControls = _buildFilterControls();
+
     return Scaffold(
       appBar: AppBar(
         leading: buildBackButton(context),
         title: const Text('History'),
         actions: [
-          IconButton(
-            tooltip: 'Home',
-            icon: const Icon(Icons.home_outlined),
-            onPressed: () => context.go('/home'),
-          ),
-          IconButton(
-            tooltip: 'Log out',
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+          OverflowMenuButton(
+            tooltip: 'Quick actions',
+            actions: [
+              OverflowAction(
+                label: 'Home',
+                icon: Icons.home_outlined,
+                onPressed: () => context.go('/home'),
+              ),
+              OverflowAction(
+                label: 'Log out',
+                icon: Icons.logout,
+                onPressed: () =>
+                    ref.read(authControllerProvider.notifier).logout(),
+              ),
+            ],
           ),
         ],
       ),
@@ -93,6 +140,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           children: [
             _buildSubUserList(userId),
             const SizedBox(height: 12),
+            if (filterControls != null) ...[
+              filterControls,
+              const SizedBox(height: 12),
+            ],
             Expanded(child: _buildLogList()),
           ],
         ),
@@ -100,11 +151,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     );
   }
 
+  void _handleSearchChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   Widget _buildSubUserList(String? userId) {
     if (_loadingSubUsers) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(
+          child: CircularProgressIndicator.adaptive(),
+        ),
       );
     }
     if (userId == null) {
@@ -142,68 +200,183 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       );
     }
     final theme = Theme.of(context);
-    return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Select sub-user',
-        border: OutlineInputBorder(),
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          isExpanded: true,
-          value: _selectedSubUserId,
-          hint: const Text('Choose a sub-user'),
-          items: _subUsers!
-              .map(
-                (subUser) => DropdownMenuItem<String>(
-                  value: subUser.subUserId,
-                  child: SizedBox(
-                    height: 48,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          subUser.name,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        if (subUser.description != null)
-                          Text(
-                            subUser.description!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
+    final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
+    final entries = _subUsers!
+        .map(
+          (subUser) => DropdownMenuEntry<String>(
+            value: subUser.subUserId,
+            label: subUser.name,
+            labelWidget: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  subUser.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-              )
-              .toList(),
-          onChanged: (value) {
-            if (value == null) return;
-            final selected = _findSubUserById(value);
-            if (selected != null) {
-              _loadLogsFor(selected);
-            }
-          },
-          selectedItemBuilder: (context) => _subUsers!
-              .map(
-                (subUser) => SizedBox(
-                  height: 48,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      subUser.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
+                if ((subUser.description ?? '').trim().isNotEmpty)
+                  Text(
+                    subUser.description!.trim(),
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: onSurfaceVariant),
                   ),
-                ),
-              )
-              .toList(),
+              ],
+            ),
+            leadingIcon: Icon(_iconForSubUser(subUser.userTypeId)),
+          ),
+        )
+        .toList();
+    return DropdownMenu<String>(
+      controller: _subUserFieldController,
+      initialSelection: _selectedSubUserId,
+      requestFocusOnTap: false,
+      enabled: !_loadingLogs,
+      enableFilter: true,
+      enableSearch: true,
+      label: const Text('Select sub-user'),
+      dropdownMenuEntries: entries,
+      onSelected: (value) {
+        if (value == null) return;
+        final selected = _findSubUserById(value);
+        if (selected != null) {
+          _applySubUserSelection(selected);
+        }
+      },
+    );
+  }
+
+  IconData _iconForSubUser(int? userTypeId) {
+    switch (userTypeId) {
+      case 2:
+        return Icons.child_friendly;
+      case 3:
+        return Icons.pets;
+      default:
+        return Icons.person_outline;
+    }
+  }
+
+  void _applySubUserSelection(SubUserModel subUser, {bool loadLogs = true}) {
+    if (!mounted) return;
+    setState(() {
+      _selectedSubUserId = subUser.subUserId;
+      _subUserFieldController.text = subUser.name;
+    });
+    if (loadLogs) {
+      _loadLogsFor(subUser);
+    }
+  }
+
+  Widget? _buildFilterControls() {
+    if (_selectedSubUserId == null || (_subUsers?.isEmpty ?? true)) {
+      return null;
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SearchAnchor.bar(
+          searchController: _searchController,
+          barHintText: 'Search logs by name, note, or type',
+          viewHintText: 'Search logs',
+          suggestionsBuilder: _buildSearchSuggestions,
         ),
+        const SizedBox(height: 12),
+        SegmentedButton<HistoryRange>(
+          showSelectedIcon: false,
+          segments: _historyRangeSegments,
+          selected: <HistoryRange>{_range},
+          onSelectionChanged: (values) {
+            if (values.isEmpty) return;
+            setState(() => _range = values.first);
+          },
+        ),
+      ],
+    );
+  }
+
+  Iterable<Widget> _buildSearchSuggestions(
+    BuildContext context,
+    SearchController controller,
+  ) {
+    final query = controller.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return const Iterable<Widget>.empty();
+    }
+    final matches = (_logs ?? const <LogEntry>[])
+        .where((log) => _logMatchesQuery(log, query))
+        .take(6)
+        .toList();
+    if (matches.isEmpty) {
+      return const [
+        ListTile(
+          leading: Icon(Icons.search_off),
+          title: Text('No matching logs'),
+          subtitle: Text('Try adjusting your search terms.'),
+        ),
+      ];
+    }
+    final formatter = DateFormat('MMM d • h:mm a');
+    return matches.map(
+      (log) => ListTile(
+        leading: const Icon(Icons.history),
+        title: Text(_HistoryLogCard._resolveLogLabel(log)),
+        subtitle: Text(formatter.format(log.logTime)),
+        onTap: () {
+          controller.closeView(log.logDescription ?? '');
+          controller.text =
+              log.logName ?? log.logDescription ?? _HistoryLogCard._resolveLogLabel(log);
+        },
       ),
     );
+  }
+
+  List<LogEntry> get _filteredLogs {
+    final logs = _logs;
+    if (logs == null) return const <LogEntry>[];
+    final query = _searchController.text.trim().toLowerCase();
+    final startDate = _rangeStartDate(_range);
+    final filtered = logs.where((log) {
+      final matchesRange = startDate == null || log.logTime.isAfter(startDate);
+      final matchesQuery =
+          query.isEmpty ? true : _logMatchesQuery(log, query);
+      return matchesRange && matchesQuery;
+    }).toList()
+      ..sort((a, b) => b.logTime.compareTo(a.logTime));
+    return filtered;
+  }
+
+  bool get _hasActiveFilters {
+    return _range != HistoryRange.all ||
+        _searchController.text.trim().isNotEmpty;
+  }
+
+  DateTime? _rangeStartDate(HistoryRange range) {
+    final now = DateTime.now();
+    switch (range) {
+      case HistoryRange.day:
+        return now.subtract(const Duration(hours: 24));
+      case HistoryRange.week:
+        return now.subtract(const Duration(days: 7));
+      case HistoryRange.month:
+        return now.subtract(const Duration(days: 30));
+      case HistoryRange.all:
+        return null;
+    }
+  }
+
+  bool _logMatchesQuery(LogEntry log, String query) {
+    bool matches(String? value) =>
+        value != null && value.toLowerCase().contains(query);
+    final label = _HistoryLogCard._resolveLogLabel(log).toLowerCase();
+    if (label.contains(query)) return true;
+    if (matches(log.logDescription)) return true;
+    if (matches(log.logName)) return true;
+    if (matches(log.userLog)) return true;
+    final timeStrings = [
+      DateFormat('MMM d, h:mm a').format(log.logTime),
+      DateFormat('y-MM-dd').format(log.logTime),
+    ];
+    return timeStrings.any((value) => value.toLowerCase().contains(query));
   }
 
   Widget _buildLogList() {
@@ -211,8 +384,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     if (selectedSubUser == null) {
       return const Center(child: Text('Select a sub-user to view logs.'));
     }
-    if (_loadingLogs) {
-      return const Center(child: CircularProgressIndicator());
+    if (_loadingLogs && _logs == null) {
+      return const Center(
+        child: CircularProgressIndicator.adaptive(),
+      );
     }
     if (_logsError != null) {
       return Center(
@@ -226,34 +401,67 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     if (_logs == null) {
       return const SizedBox.shrink();
     }
-    if (_logs!.isEmpty) {
-      return Center(child: Text('No logs found for ${selectedSubUser.name}.'));
-    }
-    final sortedLogs = List<LogEntry>.from(_logs!)
-      ..sort(
-        // Most recent logs first for easier scanning in a vertical list.
-        (a, b) => b.logTime.compareTo(a.logTime),
-      );
+    final visibleLogs = _filteredLogs;
+    final theme = Theme.of(context);
+    final emptyMessage = _hasActiveFilters
+        ? 'No logs match the current filters.'
+        : 'No logs found for ${selectedSubUser.name}.';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Log history for ${selectedSubUser.name}',
-          style: Theme.of(context).textTheme.titleMedium,
+          style: theme.textTheme.titleMedium,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.only(bottom: 16),
-            itemBuilder: (context, index) =>
-                _HistoryLogCard(log: sortedLogs[index]),
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemCount: sortedLogs.length,
+          child: RefreshIndicator.adaptive(
+            edgeOffset: 12,
+            onRefresh: _refreshLogs,
+            child: visibleLogs.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 32,
+                          horizontal: 12,
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.inbox_outlined,
+                              color: theme.colorScheme.onSurfaceVariant,
+                              size: 48,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              emptyMessage,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyLarge,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView.separated(
+                    controller: _logScrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 16),
+                    itemBuilder: (context, index) =>
+                        _HistoryLogCard(log: visibleLogs[index]),
+                    separatorBuilder: _buildLogSeparator,
+                    itemCount: visibleLogs.length,
+                  ),
           ),
         ),
       ],
     );
   }
+
+  Widget _buildLogSeparator(BuildContext context, int index) =>
+      const SizedBox(height: 12);
 
   Future<void> _loadSubUsers(String userId) async {
     final previousSubUserId = _selectedSubUserId;
@@ -265,6 +473,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       _selectedSubUserId = null;
       _logs = null;
       _logsError = null;
+      _subUserFieldController.clear();
     });
     final repo = ref.read(subUserRepositoryProvider);
     try {
@@ -284,13 +493,17 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       }
       setState(() {
         _subUsers = data;
-        _selectedSubUserId = defaultSelection?.subUserId;
-        if (_selectedSubUserId == pendingInitialSelection) {
-          _initialSubUserId = null;
-        }
       });
       if (defaultSelection != null) {
-        _loadLogsFor(defaultSelection);
+        if (pendingInitialSelection != null &&
+            pendingInitialSelection == defaultSelection.subUserId) {
+          setState(() => _initialSubUserId = null);
+        }
+        _applySubUserSelection(defaultSelection);
+      } else {
+        setState(() {
+          _selectedSubUserId = null;
+        });
       }
     } catch (e) {
       if (!mounted) return;
@@ -304,7 +517,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     }
   }
 
-  Future<void> _loadLogsFor(SubUserModel subUser) async {
+  Future<void> _loadLogsFor(
+    SubUserModel subUser, {
+    bool clearExisting = true,
+  }) async {
     final authState = ref.read(authControllerProvider);
     final userId = authState.userId;
     if (userId == null) {
@@ -319,7 +535,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       _selectedSubUserId = subUser.subUserId;
       _loadingLogs = true;
       _logsError = null;
-      _logs = null;
+      if (clearExisting) {
+        _logs = null;
+      }
     });
     final repo = ref.read(logsRepositoryProvider);
     try {
@@ -338,6 +556,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         setState(() => _loadingLogs = false);
       }
     }
+  }
+
+  Future<void> _refreshLogs() async {
+    final selectedId = _selectedSubUserId;
+    if (selectedId == null) return;
+    final selected = _findSubUserById(selectedId);
+    if (selected == null) return;
+    await _loadLogsFor(selected, clearExisting: false);
   }
 
   SubUserModel? _findSubUserById(String? id) {
@@ -366,8 +592,8 @@ class _HistoryLogCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final metadata = _metadataForLog(log);
-    final description = log.logDescription?.trim();
-    final hasDescription = description != null && description.isNotEmpty;
+    final description = log.logDescription?.trim() ?? '';
+    final hasDescription = description.isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -426,7 +652,7 @@ class _HistoryLogCard extends StatelessWidget {
           const SizedBox(height: 12),
           _LogDetailRow(
             label: 'Log description',
-            value: hasDescription ? description! : 'No description provided',
+            value: hasDescription ? description : 'No description provided',
             muted: !hasDescription,
           ),
         ],

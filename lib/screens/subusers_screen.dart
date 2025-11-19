@@ -23,15 +23,25 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
   List<UserType>? _userTypes;
   bool _loadingUserTypes = false;
   String? _userTypeError;
+  final SearchController _searchController = SearchController();
+  int? _selectedUserTypeId;
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_handleSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _loadUserTypes();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_handleSearchChanged);
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -66,15 +76,20 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
         leading: buildBackButton(context),
         title: const Text('Babies and Pets'),
         actions: [
-          IconButton(
-            tooltip: 'Home',
-            icon: const Icon(Icons.home_outlined),
-            onPressed: () => context.go('/home'),
-          ),
-          IconButton(
-            tooltip: 'Log out',
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+          OverflowMenuButton(
+            actions: [
+              OverflowAction(
+                label: 'Home',
+                icon: Icons.home_outlined,
+                onPressed: () => context.go('/home'),
+              ),
+              OverflowAction(
+                label: 'Log out',
+                icon: Icons.logout,
+                onPressed: () =>
+                    ref.read(authControllerProvider.notifier).logout(),
+              ),
+            ],
           ),
         ],
       ),
@@ -84,9 +99,19 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Your babies and pets',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(width: 8),
+                Badge.count(
+                  count: _filteredSubUsers.length,
+                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                  textColor: Theme.of(context).colorScheme.onSecondaryContainer,
+                  child: const Icon(Icons.pets_outlined),
+                ),
+                const Spacer(),
                 IconButton(
                   tooltip: 'Refresh',
                   onPressed: (_loading || !hasUser)
@@ -113,11 +138,129 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
                 ),
               ),
             const SizedBox(height: 12),
+            if (hasUser) ...[
+              _buildFilters(),
+              const SizedBox(height: 12),
+            ],
             Expanded(child: _buildBody()),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildFilters() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SearchAnchor.bar(
+          searchController: _searchController,
+          barHintText: 'Search babies or pets',
+          viewHintText: 'Search by name or description',
+          suggestionsBuilder: _buildSearchSuggestions,
+        ),
+        const SizedBox(height: 12),
+        DropdownMenu<int?>(
+          initialSelection: _selectedUserTypeId,
+          dropdownMenuEntries: [
+            const DropdownMenuEntry<int?>(
+              value: null,
+              label: 'All categories',
+            ),
+            if (_userTypes != null)
+              ..._userTypes!.map(
+                (type) => DropdownMenuEntry<int?>(
+                  value: type.id,
+                  label: type.description,
+                ),
+              ),
+          ],
+          leadingIcon: const Icon(Icons.category_outlined),
+          label: const Text('Filter by category'),
+          helperText: _userTypes == null
+              ? 'Categories load automatically after syncing.'
+              : null,
+          onSelected: (value) {
+            setState(() => _selectedUserTypeId = value);
+          },
+          enabled: !_loadingUserTypes && (_userTypes?.isNotEmpty ?? false),
+        ),
+      ],
+    );
+  }
+
+  Iterable<Widget> _buildSearchSuggestions(
+    BuildContext context,
+    SearchController controller,
+  ) {
+    final query = controller.text.trim().toLowerCase();
+    final items = _items ?? const <SubUserModel>[];
+    if (items.isEmpty) {
+      return const [
+        ListTile(
+          leading: Icon(Icons.info_outline),
+          title: Text('No entries yet'),
+          subtitle: Text('Add a baby or pet to start searching.'),
+        ),
+      ];
+    }
+    final matches = items.where((item) {
+      if (query.isEmpty) return true;
+      final normalized = item.name.toLowerCase();
+      final desc = item.description?.toLowerCase() ?? '';
+      return normalized.contains(query) || desc.contains(query);
+    }).take(6).toList();
+    if (matches.isEmpty) {
+      return const [
+        ListTile(
+          leading: Icon(Icons.search_off),
+          title: Text('No matches'),
+          subtitle: Text('Try a different search term.'),
+        ),
+      ];
+    }
+    return matches.map(
+      (item) => ListTile(
+        leading: Icon(_iconForSubUser(item.userTypeId)),
+        title: Text(item.name),
+        subtitle: item.description == null ? null : Text(item.description!),
+        onTap: () {
+          controller.closeView(item.name);
+          controller.text = item.name;
+          _handleSearchChanged();
+        },
+        trailing: IconButton(
+          icon: const Icon(Icons.history),
+          tooltip: 'View history',
+          onPressed: () {
+            final destination =
+                '/history?subUserId=${Uri.encodeComponent(item.subUserId)}';
+            context.push(destination);
+          },
+        ),
+      ),
+    );
+  }
+
+  List<SubUserModel> get _filteredSubUsers {
+    final items = _items;
+    if (items == null) return const [];
+    final query = _searchController.text.trim().toLowerCase();
+    final typeFilter = _selectedUserTypeId;
+    return items.where((item) {
+      final matchesType =
+          typeFilter == null || item.userTypeId == typeFilter;
+      final normalized = item.name.toLowerCase();
+      final description = item.description?.toLowerCase() ?? '';
+      final matchesQuery =
+          query.isEmpty || normalized.contains(query) || description.contains(query);
+      return matchesType && matchesQuery;
+    }).toList();
+  }
+
+  void _handleSearchChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   Widget _buildBody() {
@@ -126,7 +269,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
       return const Center(child: Text('Sign in to view your sub-users.'));
     }
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator.adaptive());
     }
     if (_error != null) {
       return Center(
@@ -139,26 +282,37 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
     if (_items!.isEmpty) {
       return const Center(child: Text('No sub-users yet'));
     }
-    return ListView.separated(
-      itemCount: _items!.length,
-      separatorBuilder: (_, index) => const Divider(height: 1),
-      itemBuilder: (_, index) {
-        final item = _items![index];
-        final iconData = _iconForSubUser(item.userTypeId);
-        return ListTile(
-          leading: Icon(iconData),
-          title: Text(item.name),
-          subtitle: (item.description != null && item.description!.isNotEmpty)
-              ? Text(item.description!)
-              : null,
-          trailing: const Icon(Icons.history),
-          onTap: () {
-            final destination =
-                '/history?subUserId=${Uri.encodeComponent(item.subUserId)}';
-            context.push(destination);
-          },
-        );
-      },
+    final visibleItems = _filteredSubUsers;
+    if (visibleItems.isEmpty) {
+      return const Center(
+        child: Text('No sub-users match the current filters.'),
+      );
+    }
+    return RefreshIndicator.adaptive(
+      onRefresh: () => _load(showSnackOnMissingId: false),
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: visibleItems.length,
+        separatorBuilder: (_, index) => const Divider(height: 1),
+        itemBuilder: (_, index) {
+          final item = visibleItems[index];
+          final iconData = _iconForSubUser(item.userTypeId);
+          return ListTile(
+            leading: Icon(iconData),
+            title: Text(item.name),
+            subtitle: (item.description != null &&
+                    item.description!.isNotEmpty)
+                ? Text(item.description!)
+                : null,
+            trailing: const Icon(Icons.history),
+            onTap: () {
+              final destination =
+                  '/history?subUserId=${Uri.encodeComponent(item.subUserId)}';
+              context.push(destination);
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -246,21 +400,20 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<UserType>(
-                  initialValue: selectedType,
-                  items: availableTypes
+                DropdownMenu<UserType>(
+                  initialSelection: selectedType,
+                  dropdownMenuEntries: availableTypes
                       .map(
-                        (type) => DropdownMenuItem(
+                        (type) => DropdownMenuEntry<UserType>(
                           value: type,
-                          child: Text(type.description),
+                          label: type.description,
                         ),
                       )
                       .toList(),
-                  onChanged: (value) {
+                  label: const Text('Type'),
+                  onSelected: (value) {
                     setStateDialog(() => selectedType = value);
                   },
-                  decoration: const InputDecoration(labelText: 'Type'),
-                  validator: (value) => value == null ? 'Select a type' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(

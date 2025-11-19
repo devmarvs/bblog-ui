@@ -19,6 +19,8 @@ class AddLogScreen extends ConsumerStatefulWidget {
   ConsumerState<AddLogScreen> createState() => _AddLogScreenState();
 }
 
+enum _QuickTimeRange { now, minus1Hour, minus4Hours }
+
 class _AddLogScreenState extends ConsumerState<AddLogScreen> {
   final _formKey = GlobalKey<FormState>();
   final _logDesc = TextEditingController();
@@ -44,10 +46,12 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
   List<UserType>? _userTypes;
   bool _loadingUserTypes = false;
   String? _userTypeError;
+  _QuickTimeRange? _quickTimeRange = _QuickTimeRange.now;
 
   @override
   void initState() {
     super.initState();
+    _logTime = _resolveQuickTime(_QuickTimeRange.now);
     _selectedLogType = _fallbackLogTypes.first;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -102,19 +106,24 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
         leading: buildBackButton(context),
         title: const Text('Add Log'),
         actions: [
-          IconButton(
-            tooltip: 'Home',
-            icon: const Icon(Icons.home_outlined),
-            onPressed: () => context.go('/home'),
-          ),
-          IconButton(
-            tooltip: 'Log out',
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+          OverflowMenuButton(
+            actions: [
+              OverflowAction(
+                label: 'Home',
+                icon: Icons.home_outlined,
+                onPressed: () => context.go('/home'),
+              ),
+              OverflowAction(
+                label: 'Log out',
+                icon: Icons.logout,
+                onPressed: () =>
+                    ref.read(authControllerProvider.notifier).logout(),
+              ),
+            ],
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: RefreshIndicator.adaptive(
         onRefresh: () => _loadSubUsers(showSnackOnMissingId: false),
         child: ListView(
           padding: const EdgeInsets.all(16.0),
@@ -170,30 +179,26 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
                       child: LinearProgressIndicator(),
                     )
                   else
-                    DropdownButtonFormField<LogType>(
-                      key: ValueKey(_selectedLogType?.id),
-                      initialValue: _selectedLogType,
-                      items: _logTypes
+                    DropdownMenu<int>(
+                      initialSelection: _selectedLogType?.id,
+                      dropdownMenuEntries: _logTypes
                           .map(
-                            (option) => DropdownMenuItem(
-                              value: option,
-                              child: _buildLogTypeLabel(context, option),
+                            (option) => DropdownMenuEntry<int>(
+                              value: option.id,
+                              label: option.name,
+                              labelWidget: _buildLogTypeLabel(context, option),
                             ),
                           )
                           .toList(),
-                      selectedItemBuilder: (context) => _logTypes
-                          .map(
-                            (option) => Align(
-                              alignment: Alignment.centerLeft,
-                              child: _buildLogTypeLabel(context, option),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (option) {
-                        if (option == null) return;
-                        setState(() => _selectedLogType = option);
+                      label: const Text('Log type'),
+                      onSelected: (value) {
+                        if (value == null) return;
+                        final match = _logTypes.firstWhere(
+                          (element) => element.id == value,
+                          orElse: () => _logTypes.first,
+                        );
+                        setState(() => _selectedLogType = match);
                       },
-                      decoration: const InputDecoration(labelText: 'Log type'),
                     ),
                   if (_logTypeError != null)
                     Padding(
@@ -212,12 +217,53 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
                     maxLines: 3,
                   ),
                   const SizedBox(height: 12),
+                  SegmentedButton<_QuickTimeRange>(
+                    segments: const [
+                      ButtonSegment(
+                        value: _QuickTimeRange.now,
+                        label: Text('Now'),
+                        icon: Icon(Icons.flash_on_outlined),
+                      ),
+                      ButtonSegment(
+                        value: _QuickTimeRange.minus1Hour,
+                        label: Text('-1h'),
+                        icon: Icon(Icons.timer_outlined),
+                      ),
+                      ButtonSegment(
+                        value: _QuickTimeRange.minus4Hours,
+                        label: Text('-4h'),
+                        icon: Icon(Icons.schedule),
+                      ),
+                    ],
+                    showSelectedIcon: false,
+                    selected: _quickTimeRange == null
+                        ? const <_QuickTimeRange>{}
+                        : <_QuickTimeRange>{_quickTimeRange!},
+                    onSelectionChanged: (values) {
+                      if (values.isEmpty) {
+                        setState(() => _quickTimeRange = null);
+                        return;
+                      }
+                      final range = values.first;
+                      setState(() {
+                        _quickTimeRange = range;
+                        _logTime = _resolveQuickTime(range);
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(child: Text('Time: $formattedTime')),
-                      TextButton(
+                      Expanded(
+                        child: Text(
+                          'Time: $formattedTime',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ),
+                      TextButton.icon(
                         onPressed: _pickDateTime,
-                        child: const Text('Pick time'),
+                        icon: const Icon(Icons.edit_calendar_outlined),
+                        label: const Text('Pick time'),
                       ),
                     ],
                   ),
@@ -271,7 +317,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     if (_loadingSubUsers) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: CircularProgressIndicator.adaptive()),
       );
     }
     if (_subUserError != null) {
@@ -283,32 +329,29 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     if (_subUsers!.isEmpty) {
       return const Text('No sub-users yet. Add one to start logging.');
     }
-    final items = _subUsers!
+    final entries = _subUsers!
         .map(
-          (sub) => DropdownMenuItem<SubUserModel>(
-            value: sub,
-            child: _buildSubUserLabel(sub),
+          (sub) => DropdownMenuEntry<String>(
+            value: sub.subUserId,
+            label: sub.name,
+            labelWidget: _buildSubUserLabel(sub),
           ),
         )
         .toList();
-    return DropdownButtonFormField<SubUserModel>(
-      key: ValueKey(_selectedSubUser?.subUserId ?? 'none'),
-      initialValue: _selectedSubUser,
-      items: items,
-      isExpanded: true,
-      selectedItemBuilder: (context) => _subUsers!
-          .map(
-            (sub) => Align(
-              alignment: Alignment.centerLeft,
-              child: _buildSubUserLabel(sub, dense: true),
-            ),
-          )
-          .toList(),
-      onChanged: (sub) {
-        if (sub == null) return;
-        setState(() => _selectedSubUser = sub);
+    return DropdownMenu<String>(
+      initialSelection: _selectedSubUser?.subUserId,
+      dropdownMenuEntries: entries,
+      enableFilter: true,
+      enableSearch: true,
+      label: const Text('Select baby or pet'),
+      onSelected: (value) {
+        if (value == null) return;
+        final selected = _subUsers!.firstWhere(
+          (sub) => sub.subUserId == value,
+          orElse: () => _subUsers!.first,
+        );
+        setState(() => _selectedSubUser = selected);
       },
-      decoration: const InputDecoration(labelText: 'Select baby or pet'),
     );
   }
 
@@ -335,6 +378,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
         time.hour,
         time.minute,
       );
+      _quickTimeRange = null;
     });
   }
 
@@ -472,6 +516,18 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
         ),
       ],
     );
+  }
+
+  DateTime _resolveQuickTime(_QuickTimeRange range) {
+    final now = DateTime.now();
+    switch (range) {
+      case _QuickTimeRange.now:
+        return now;
+      case _QuickTimeRange.minus1Hour:
+        return now.subtract(const Duration(hours: 1));
+      case _QuickTimeRange.minus4Hours:
+        return now.subtract(const Duration(hours: 4));
+    }
   }
 
   IconData _iconForSubUser(int? userTypeId) {

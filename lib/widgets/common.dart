@@ -129,3 +129,64 @@ class BrandLogo extends StatelessWidget {
     );
   }
 }
+
+class OverflowAction {
+  const OverflowAction({
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.destructive = false,
+    this.enabled = true,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final IconData? icon;
+  final bool destructive;
+  final bool enabled;
+}
+
+class OverflowMenuButton extends StatelessWidget {
+  const OverflowMenuButton({
+    super.key,
+    required this.actions,
+    this.tooltip = 'More actions',
+    this.icon = Icons.more_vert,
+  });
+
+  final List<OverflowAction> actions;
+  final String tooltip;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final available = actions.where((action) => action.enabled).toList();
+    if (available.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return MenuAnchor(
+      menuChildren: [
+        for (final action in available)
+          MenuItemButton(
+            leadingIcon: action.icon == null ? null : Icon(action.icon),
+            style: action.destructive
+                ? MenuItemButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  )
+                : null,
+            onPressed: action.onPressed,
+            child: Text(action.label),
+          ),
+      ],
+      builder: (context, controller, _) {
+        return IconButton(
+          tooltip: tooltip,
+          icon: Icon(icon),
+          onPressed: () {
+            controller.isOpen ? controller.close() : controller.open();
+          },
+        );
+      },
+    );
+  }
+}

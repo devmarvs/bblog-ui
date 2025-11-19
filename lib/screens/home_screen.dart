@@ -10,88 +10,201 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final actions = [
+      _HomeAction(
+        title: 'Babies and Pets',
+        subtitle: 'Manage caregivers, babies, or pets',
+        icon: Icons.group_outlined,
+        route: '/subusers',
+      ),
+      _HomeAction(
+        title: 'Add Log',
+        subtitle: 'Record a new activity in seconds',
+        icon: Icons.add_circle_outline,
+        route: '/add-log',
+      ),
+      _HomeAction(
+        title: 'History',
+        subtitle: 'Review logs by sub-user',
+        icon: Icons.history,
+        route: '/history',
+      ),
+      _HomeAction(
+        title: 'Profile',
+        subtitle: 'Adjust appearance and sign out',
+        icon: Icons.person_outline,
+        route: '/profile',
+      ),
+    ];
+
+    void handleDestination(int index) {
+      switch (index) {
+        case 0:
+          context.go('/home');
+          break;
+        case 1:
+          context.push('/subusers');
+          break;
+        case 2:
+          context.push('/add-log');
+          break;
+        case 3:
+          context.push('/history');
+          break;
+        case 4:
+          context.push('/profile');
+          break;
+      }
+    }
+
+    Widget buildCards() {
+      return ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemBuilder: (context, index) {
+          final action = actions[index];
+          return _HomeActionCard(
+            action: action,
+            onTap: () => context.push(action.route),
+          );
+        },
+        separatorBuilder: (_, unused) => const SizedBox(height: 12),
+        itemCount: actions.length,
+      );
+    }
+
+    final body = LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 900;
+        if (!isWide) {
+          return buildCards();
+        }
+        return Row(
+          children: [
+            NavigationRail(
+              selectedIndex: 0,
+              onDestinationSelected: handleDestination,
+              labelType: NavigationRailLabelType.selected,
+              destinations: const [
+                NavigationRailDestination(
+                  icon: Icon(Icons.home_outlined),
+                  label: Text('Home'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.group_outlined),
+                  label: Text('Pets'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.add_circle_outline),
+                  label: Text('Add Log'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.history),
+                  label: Text('History'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.person_outline),
+                  label: Text('Profile'),
+                ),
+              ],
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(child: buildCards()),
+          ],
+        );
+      },
+    );
+
     return Scaffold(
       appBar: AppBar(
         leading: buildBackButton(context),
         title: const Text('Home'),
         actions: [
-          IconButton(
-            tooltip: 'Log out',
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+          OverflowMenuButton(
+            actions: [
+              OverflowAction(
+                label: 'Profile',
+                icon: Icons.person_outline,
+                onPressed: () => context.push('/profile'),
+              ),
+              OverflowAction(
+                label: 'Log out',
+                icon: Icons.logout,
+                onPressed: () =>
+                    ref.read(authControllerProvider.notifier).logout(),
+              ),
+            ],
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            Card(
-              child: ListTile(
-                title: const Text('Babies and Pets'),
-                subtitle: const Text('Manage babies or pets'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/subusers'),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: ListTile(
-                title: const Text('Add Log'),
-                subtitle: const Text('Record a new activity'),
-                trailing: const Icon(Icons.add_circle_outline),
-                onTap: () => context.push('/add-log'),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: ListTile(
-                title: const Text('History'),
-                subtitle: const Text('View logs by sub-user'),
-                trailing: const Icon(Icons.history),
-                onTap: () => context.push('/history'),
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        onDestinationSelected: (index) {
-          switch (index) {
-            case 0:
-              context.go('/home');
-              break;
-            case 1:
-              context.push('/subusers');
-              break;
-            case 2:
-              context.push('/add-log');
-              break;
-            case 3:
-              context.push('/history');
-              break;
-            case 4:
-              context.push('/profile');
-              break;
+      body: body,
+      bottomNavigationBar: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 900) {
+            return const SizedBox.shrink();
           }
+          return NavigationBar(
+            selectedIndex: 0,
+            onDestinationSelected: handleDestination,
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.group_outlined),
+                label: 'Pets/Babies',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.add_circle_outline),
+                label: 'Add Log',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.history),
+                label: 'History',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                label: 'Profile',
+              ),
+            ],
+          );
         },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(
-            icon: Icon(Icons.group_outlined),
-            label: 'Pets/Babies',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.add_circle_outline),
-            label: 'Add Log',
-          ),
-          NavigationDestination(icon: Icon(Icons.history), label: 'History'),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
+      ),
+    );
+  }
+}
+
+class _HomeAction {
+  const _HomeAction({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.route,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String route;
+}
+
+class _HomeActionCard extends StatelessWidget {
+  const _HomeActionCard({required this.action, required this.onTap});
+
+  final _HomeAction action;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        title: Text(action.title),
+        subtitle: Text(action.subtitle),
+        leading: CircleAvatar(
+          child: Icon(action.icon),
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
       ),
     );
   }
