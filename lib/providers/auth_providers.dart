@@ -93,8 +93,8 @@ class AuthController extends Notifier<AuthState> {
     required String username,
     required String email,
     required String password,
-    String? phone,
-    String? country,
+    String? mobile,
+    String? countryCode,
   }) async {
     state = state.copyWith(
       token: null,
@@ -107,8 +107,8 @@ class AuthController extends Notifier<AuthState> {
         username: username,
         email: email,
         password: password,
-        phone: phone,
-        country: country,
+        mobile: mobile,
+        countryCode: countryCode,
       );
       state = const AuthState(token: null, userId: null);
       return true;

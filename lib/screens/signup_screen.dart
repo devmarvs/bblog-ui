@@ -12,54 +12,17 @@ class SignupScreen extends ConsumerStatefulWidget {
   ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-enum AccountRole { parent, caregiver, supporter }
-
-extension on AccountRole {
-  String get label {
-    switch (this) {
-      case AccountRole.parent:
-        return 'Parent';
-      case AccountRole.caregiver:
-        return 'Caregiver';
-      case AccountRole.supporter:
-        return 'Support crew';
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case AccountRole.parent:
-        return Icons.family_restroom;
-      case AccountRole.caregiver:
-        return Icons.volunteer_activism;
-      case AccountRole.supporter:
-        return Icons.groups_2;
-    }
-  }
-
-  String get description {
-    switch (this) {
-      case AccountRole.parent:
-        return 'Full access for primary guardians.';
-      case AccountRole.caregiver:
-        return 'Hands-on support role with logging access.';
-      case AccountRole.supporter:
-        return 'View-only helpers who cheer from afar.';
-    }
-  }
-}
-
-const List<String> _countryOptions = [
-  'United States',
-  'Canada',
-  'United Kingdom',
-  'Australia',
-  'Germany',
-  'France',
-  'Brazil',
-  'India',
-  'Japan',
-  'Other',
+const List<Map<String, String>> _countryOptions = [
+  {'code': 'US', 'label': 'US - United States'},
+  {'code': 'CA', 'label': 'CA - Canada'},
+  {'code': 'GB', 'label': 'GB - United Kingdom'},
+  {'code': 'AU', 'label': 'AU - Australia'},
+  {'code': 'DE', 'label': 'DE - Germany'},
+  {'code': 'FR', 'label': 'FR - France'},
+  {'code': 'BR', 'label': 'BR - Brazil'},
+  {'code': 'IN', 'label': 'IN - India'},
+  {'code': 'JP', 'label': 'JP - Japan'},
+  {'code': '', 'label': 'Other'},
 ];
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
@@ -69,24 +32,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _password = TextEditingController();
   final _country = TextEditingController();
   final _phone = TextEditingController();
-  AccountRole _role = AccountRole.parent;
-
-  List<ButtonSegment<AccountRole>> get _roleSegments =>
-      AccountRole.values
-          .map(
-            (role) => ButtonSegment<AccountRole>(
-              value: role,
-              icon: Icon(role.icon),
-              label: Text(role.label),
-            ),
-          )
-          .toList();
 
   final List<DropdownMenuEntry<String>> _countryEntries = _countryOptions
       .map(
         (country) => DropdownMenuEntry<String>(
-          value: country == 'Other' ? '' : country,
-          label: country,
+          value: country['code'] ?? '',
+          label: country['label'] ?? '',
         ),
       )
       .toList();
@@ -104,7 +55,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
-    final roleDescription = _role.description;
     return Scaffold(
       appBar: AppBar(
         leading: buildBackButton(context),
@@ -133,24 +83,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SegmentedButton<AccountRole>(
-                      segments: _roleSegments,
-                      selected: <AccountRole>{_role},
-                      showSelectedIcon: false,
-                      onSelectionChanged: (selection) {
-                        if (selection.isEmpty) return;
-                        setState(() => _role = selection.first);
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      roleDescription,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                    const SizedBox(height: 24),
                     TextFormField(
                       controller: _username,
                       decoration: const InputDecoration(labelText: 'Username'),
@@ -176,7 +108,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     const SizedBox(height: 12),
                     DropdownMenu<String>(
                       controller: _country,
-                      label: const Text('Country (optional)'),
+                      label: const Text('Country code (optional)'),
                       dropdownMenuEntries: _countryEntries,
                       leadingIcon: const Icon(Icons.public),
                       enableFilter: true,
@@ -187,7 +119,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     TextFormField(
                       controller: _phone,
                       decoration: const InputDecoration(
-                        labelText: 'Phone (optional)',
+                        labelText: 'Mobile (optional)',
+                        helperText: 'Include country code, e.g. +15005550000',
                       ),
                       keyboardType: TextInputType.phone,
                     ),
@@ -205,20 +138,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               username: _username.text.trim(),
                               email: _email.text.trim(),
                               password: _password.text,
-                              country: _country.text.isEmpty
+                              countryCode: _country.text.trim().isEmpty
                                   ? null
                                   : _country.text.trim(),
-                              phone: _phone.text.isEmpty
+                              mobile: _phone.text.trim().isEmpty
                                   ? null
                                   : _phone.text.trim(),
                             );
                         if (!context.mounted) return;
                         if (success) {
                           final email = _email.text.trim();
-                          final snackText =
-                              'Thanks, ${_role.label}! Verification email sent to $email';
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(snackText)),
+                            SnackBar(
+                              content: Text(
+                                'Thanks! Verification email sent to $email',
+                              ),
+                            ),
                           );
                           context.go(
                             Uri(

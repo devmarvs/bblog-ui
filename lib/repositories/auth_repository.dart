@@ -21,17 +21,22 @@ class AuthRepository {
     required String username,
     required String email,
     required String password,
-    String? phone,
-    String? country,
+    String? mobile,
+    String? countryCode,
   }) async {
+    final normalizedCountry = countryCode?.trim().toUpperCase();
+    final normalizedMobile = mobile?.trim();
     await dio.post(
       ApiPaths.userCreate,
       data: {
+        'user_type_id': 1, // 1 = user (required by API)
         'username': username,
         'email': email,
         'password': password,
-        if (phone != null) 'phone': phone,
-        if (country != null) 'country': country,
+        if (normalizedMobile != null && normalizedMobile.isNotEmpty)
+          'mobile': normalizedMobile,
+        if (normalizedCountry != null && normalizedCountry.isNotEmpty)
+          'country_code': normalizedCountry,
       },
     );
   }
