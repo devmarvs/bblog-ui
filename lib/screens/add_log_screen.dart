@@ -47,6 +47,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
   bool _loadingUserTypes = false;
   String? _userTypeError;
   _QuickTimeRange? _quickTimeRange = _QuickTimeRange.now;
+  bool _authListenerAttached = false;
 
   @override
   void initState() {
@@ -68,20 +69,23 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authControllerProvider, (previous, next) {
-      final prevId = previous?.userId ?? '';
-      final nextId = next.userId ?? '';
-      if (nextId.isNotEmpty && nextId != prevId) {
-        _loadSubUsers(userId: nextId, showSnackOnMissingId: false);
-      }
-      if (nextId.isEmpty && prevId.isNotEmpty) {
-        setState(() {
-          _subUsers = null;
-          _selectedSubUser = null;
-          _subUserError = null;
-        });
-      }
-    });
+    if (!_authListenerAttached) {
+      _authListenerAttached = true;
+      ref.listen<AuthState>(authControllerProvider, (previous, next) {
+        final prevId = previous?.userId ?? '';
+        final nextId = next.userId ?? '';
+        if (nextId.isNotEmpty && nextId != prevId) {
+          _loadSubUsers(userId: nextId, showSnackOnMissingId: false);
+        }
+        if (nextId.isEmpty && prevId.isNotEmpty) {
+          setState(() {
+            _subUsers = null;
+            _selectedSubUser = null;
+            _subUserError = null;
+          });
+        }
+      });
+    }
     final authState = ref.watch(authControllerProvider);
     final userId = authState.userId ?? '';
     final hasUserId = userId.isNotEmpty;

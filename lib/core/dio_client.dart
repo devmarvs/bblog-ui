@@ -28,7 +28,13 @@ class DioClient {
         },
         onError: (e, handler) async {
           // Basic 401 handling → notify app to logout
-          if (e.response?.statusCode == 401) {
+          final path = e.requestOptions.path;
+          final isLoginRequest = path.endsWith(ApiPaths.login);
+
+          // Ignore auth failures on the login endpoint so we can surface the
+          // actual error message instead of immediately logging out/resetting
+          // state and clearing it.
+          if (e.response?.statusCode == 401 && !isLoginRequest) {
             await _tokenStorage.clear();
             onUnauthorized?.call();
           }

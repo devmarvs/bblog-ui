@@ -25,6 +25,7 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
   String? _userTypeError;
   final SearchController _searchController = SearchController();
   int? _selectedUserTypeId;
+  bool _authListenerAttached = false;
 
   @override
   void initState() {
@@ -46,20 +47,23 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authControllerProvider, (previous, next) {
-      final prevId = previous?.userId ?? '';
-      final nextId = next.userId ?? '';
-      if (nextId.isNotEmpty && nextId != prevId) {
-        _load(userId: nextId, showSnackOnMissingId: false);
-      }
-      if (nextId.isEmpty && prevId.isNotEmpty) {
-        setState(() {
-          _items = null;
-          _error = null;
-          _loading = false;
-        });
-      }
-    });
+    if (!_authListenerAttached) {
+      _authListenerAttached = true;
+      ref.listen<AuthState>(authControllerProvider, (previous, next) {
+        final prevId = previous?.userId ?? '';
+        final nextId = next.userId ?? '';
+        if (nextId.isNotEmpty && nextId != prevId) {
+          _load(userId: nextId, showSnackOnMissingId: false);
+        }
+        if (nextId.isEmpty && prevId.isNotEmpty) {
+          setState(() {
+            _items = null;
+            _error = null;
+            _loading = false;
+          });
+        }
+      });
+    }
 
     final authState = ref.watch(authControllerProvider);
     final userId = authState.userId ?? '';
@@ -466,7 +470,6 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
       }
     }
 
-    nameCtrl.dispose();
   }
 
   Future<void> _loadUserTypes() async {

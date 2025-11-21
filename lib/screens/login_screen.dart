@@ -16,6 +16,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _pwCtrl = TextEditingController();
+  bool _errorListenerAttached = false;
 
   @override
   void dispose() {
@@ -26,6 +27,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_errorListenerAttached) {
+      _errorListenerAttached = true;
+      ref.listen<AuthState>(
+        authControllerProvider,
+        (previous, next) {
+          final prevError = previous?.error;
+          final error = next.error;
+          if (error == null || error == prevError) return;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(error),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+          });
+        },
+      );
+    }
+
     final auth = ref.watch(authControllerProvider);
     final errorText = auth.error;
     return Scaffold(
