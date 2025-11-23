@@ -2,8 +2,8 @@ class ApiPaths {
   static const String base = '/bblog';
   static const String login = '$base/login';
   static const String userCreate = '$base/user/create';
-  static const String emailVerificationRequest =
-      '$base/user/verify-email/request';
+  // API expects POST /bblog/user/verify-email to resend verification.
+  static const String emailVerificationRequest = '$base/user/verify-email';
   static const String emailVerificationConfirm =
       '$base/user/verify-email/confirm';
   static const String passwordForgot = '$base/user/password/forgot';
