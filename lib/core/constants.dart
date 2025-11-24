@@ -2,8 +2,12 @@ class ApiPaths {
   static const String base = '/bblog';
   static const String login = '$base/login';
   static const String userCreate = '$base/user/create';
-  // API expects POST /bblog/user/verify-email to resend verification.
+  // Primary endpoint for resending verification.
   static const String emailVerificationRequest = '$base/user/verify-email';
+  // Aliases supported by the backend.
+  static const String emailVerificationRequestLegacy =
+      '$base/user/verify-email/request';
+  static const String emailVerificationResend = '$base/user/resend-verification';
   static const String emailVerificationConfirm =
       '$base/user/verify-email/confirm';
   static const String passwordForgot = '$base/user/password/forgot';

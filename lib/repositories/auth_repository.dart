@@ -17,7 +17,7 @@ class AuthRepository {
     return AuthResponse.fromJson(res.data as Map<String, dynamic>);
   }
 
-  Future<void> signup({
+  Future<AuthResponse?> signup({
     required String username,
     required String email,
     required String password,
@@ -26,7 +26,7 @@ class AuthRepository {
   }) async {
     final normalizedCountry = countryCode?.trim().toUpperCase();
     final normalizedMobile = mobile?.trim();
-    await dio.post(
+    final res = await dio.post(
       ApiPaths.userCreate,
       data: {
         'user_type_id': 1, // 1 = user (required by API)
@@ -39,10 +39,64 @@ class AuthRepository {
           'country_code': normalizedCountry,
       },
     );
+    final data = res.data;
+    if (data is Map<String, dynamic> && data.containsKey('token')) {
+      return AuthResponse.fromJson(data);
+    }
+    return null;
   }
 
   Future<void> requestEmailVerification({required String email}) async {
-    await dio.post(ApiPaths.emailVerificationRequest, data: {'email': email});
+    final trimmed = email.trim();
+    // Backend now supports multiple public aliases for resend.
+    final endpoints = <String>[
+      ApiPaths.emailVerificationRequest,
+      ApiPaths.emailVerificationResend,
+      ApiPaths.emailVerificationRequestLegacy,
+      '/user/verify-email', // no-prefix alias
+      '/user/verify-email/request',
+      '/user/resend-verification',
+    ];
+
+    DioException? lastError;
+    for (final path in endpoints) {
+      for (final skipAuth in [true, false]) {
+        // Try POST
+        try {
+          await dio.post(
+            path,
+            data: {'email': trimmed},
+            options: Options(extra: {'skipAuth': skipAuth}),
+          );
+          return;
+        } on DioException catch (e) {
+          lastError = e;
+          if (e.response?.statusCode != 404 &&
+              e.response?.statusCode != 401) {
+            rethrow;
+          }
+          // Else try GET below.
+        }
+
+        // Try GET
+        try {
+          await dio.get(
+            path,
+            queryParameters: {'email': trimmed},
+            options: Options(extra: {'skipAuth': skipAuth}),
+          );
+          return;
+        } on DioException catch (e) {
+          lastError = e;
+          if (e.response?.statusCode != 404 &&
+              e.response?.statusCode != 401) {
+            rethrow;
+          }
+        }
+      }
+    }
+
+    if (lastError != null) throw lastError;
   }
 
   Future<void> confirmEmailVerification({

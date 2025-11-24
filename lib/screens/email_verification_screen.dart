@@ -26,7 +26,10 @@ class _EmailVerificationScreenState
   @override
   void initState() {
     super.initState();
-    _email = widget.initialEmail;
+    final storedEmail = ref
+        .read(authControllerProvider)
+        .pendingVerificationEmail;
+    _email = widget.initialEmail ?? storedEmail;
   }
 
   @override
@@ -44,13 +47,14 @@ class _EmailVerificationScreenState
             padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   _email == null || _email!.isEmpty
                       ? 'Check your email inbox and spam folder for the verification message.'
                       : 'We sent a verification email to $_email.\nPlease check your inbox and spam folder.',
                   style: theme.textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 TextButton(
@@ -75,6 +79,7 @@ class _EmailVerificationScreenState
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
                 if (_error != null) ...[
@@ -109,7 +114,7 @@ class _EmailVerificationScreenState
       if (!mounted) return;
       setState(() {
         _resending = false;
-        _info = 'Verification email sent. Check your inbox.';
+        _info = 'Verification email sent. Check your inbox and spam folder.';
       });
     } catch (e) {
       if (!mounted) return;

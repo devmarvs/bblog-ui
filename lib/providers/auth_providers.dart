@@ -10,12 +10,19 @@ import '../core/storage/token_storage.dart';
 import '../repositories/auth_repository.dart';
 
 class AuthState {
-  const AuthState({this.token, this.userId, this.loading = false, this.error});
+  const AuthState({
+    this.token,
+    this.userId,
+    this.loading = false,
+    this.error,
+    this.pendingVerificationEmail,
+  });
 
   final String? token;
   final String? userId;
   final bool loading;
   final String? error;
+  final String? pendingVerificationEmail;
 
   static const _sentinel = Object();
 
@@ -24,12 +31,16 @@ class AuthState {
     Object? userId = _sentinel,
     bool? loading,
     Object? error = _sentinel,
+    Object? pendingVerificationEmail = _sentinel,
   }) {
     return AuthState(
       token: token == _sentinel ? this.token : token as String?,
       userId: userId == _sentinel ? this.userId : userId as String?,
       loading: loading ?? this.loading,
       error: error == _sentinel ? this.error : error as String?,
+      pendingVerificationEmail: pendingVerificationEmail == _sentinel
+          ? this.pendingVerificationEmail
+          : pendingVerificationEmail as String?,
     );
   }
 }
@@ -66,6 +77,7 @@ class AuthController extends Notifier<AuthState> {
       userId: null,
       loading: true,
       error: null,
+      pendingVerificationEmail: null,
     );
     try {
       final res = await _repo.login(email: email, password: password);
@@ -101,16 +113,33 @@ class AuthController extends Notifier<AuthState> {
       userId: null,
       loading: true,
       error: null,
+      pendingVerificationEmail: null,
     );
     try {
-      await _repo.signup(
+      final authRes = await _repo.signup(
         username: username,
         email: email,
         password: password,
         mobile: mobile,
         countryCode: countryCode,
       );
-      state = const AuthState(token: null, userId: null);
+      if (authRes?.token != null) {
+        await _storage.save(authRes!.token);
+        if (authRes.userId != null) {
+          await _storage.saveUserId(authRes.userId!);
+        }
+        state = AuthState(
+          token: authRes.token,
+          userId: authRes.userId,
+          pendingVerificationEmail: email,
+        );
+      } else {
+        state = AuthState(
+          token: null,
+          userId: null,
+          pendingVerificationEmail: email,
+        );
+      }
       return true;
     } on DioException catch (e) {
       final message = friendlyErrorMessage(e, fallback: 'Failed to sign up');
