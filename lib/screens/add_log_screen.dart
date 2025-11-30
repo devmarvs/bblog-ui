@@ -736,7 +736,7 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
     final color = Theme.of(context).colorScheme.primary;
     final rule = _findLogIconRule(type);
     if (rule?.emoji != null) {
-      return Text(rule!.emoji!, style: const TextStyle(fontSize: 18));
+      return Text(rule!.emoji!, style: const TextStyle(fontSize: 20));
     }
     final icon = rule?.icon ?? Icons.event_note;
     return Icon(icon, color: color, size: 20);
@@ -762,54 +762,95 @@ class _LogIconRule {
 }
 
 const List<_LogIconRule> _logIconRules = [
+  // Diaper/Bathroom related
   _LogIconRule(
     keywords: ['poop', 'stool', 'bm', 'bowel', 'dirty'],
     emoji: '💩',
   ),
   _LogIconRule(
     keywords: ['pee', 'urine', 'wet', 'potty'],
-    icon: Icons.water_drop,
-  ),
-  _LogIconRule(keywords: ['milk', 'bottle', 'formula'], emoji: '🍼'),
-  _LogIconRule(
-    keywords: ['feed', 'meal', 'food', 'nurse', 'latch'],
-    icon: Icons.restaurant,
-  ),
-  _LogIconRule(keywords: ['pump', 'pumping'], icon: Icons.local_drink),
-  _LogIconRule(
-    keywords: ['sleep', 'nap', 'bed', 'rest', 'doze'],
-    icon: Icons.bedtime,
+    emoji: '💧',
   ),
   _LogIconRule(
     keywords: ['diaper', 'change', 'nappy', 'cloth'],
-    icon: Icons.baby_changing_station,
+    emoji: '🧷',
   ),
+  
+  // Feeding related
+  _LogIconRule(keywords: ['milk', 'bottle', 'formula'], emoji: '🍼'),
+  _LogIconRule(
+    keywords: ['feed', 'meal', 'food', 'eat', 'breakfast', 'lunch', 'dinner'],
+    emoji: '🍽️',
+  ),
+  _LogIconRule(
+    keywords: ['nurse', 'latch', 'breastfeed', 'nursing'],
+    emoji: '🤱',
+  ),
+  _LogIconRule(keywords: ['pump', 'pumping'], emoji: '🍶'),
+  _LogIconRule(keywords: ['snack', 'treat'], emoji: '🍪'),
+  
+  // Sleep related
+  _LogIconRule(
+    keywords: ['sleep', 'nap', 'bed', 'rest', 'doze', 'bedtime'],
+    emoji: '😴',
+  ),
+  
+  // Hygiene/Care
   _LogIconRule(
     keywords: ['bath', 'wash', 'shower', 'tub', 'clean'],
-    icon: Icons.bathtub,
+    emoji: '🛁',
   ),
+  _LogIconRule(keywords: ['teeth', 'brush', 'dental'], emoji: '🪥'),
+  _LogIconRule(keywords: ['groom', 'haircut', 'trim', 'clip'], emoji: '✂️'),
+  
+  // Health/Medical
   _LogIconRule(
     keywords: ['med', 'medicine', 'medication', 'drug', 'dose', 'vitamin'],
-    icon: Icons.medication,
+    emoji: '💊',
   ),
   _LogIconRule(
-    keywords: ['doctor', 'clinic', 'checkup', 'health', 'nurse'],
-    icon: Icons.healing,
+    keywords: ['doctor', 'clinic', 'checkup', 'health', 'nurse', 'visit'],
+    emoji: '🏥',
   ),
   _LogIconRule(
     keywords: ['temperature', 'temp', 'fever', 'thermometer'],
-    icon: Icons.device_thermostat,
+    emoji: '🌡️',
   ),
   _LogIconRule(
-    keywords: ['walk', 'exercise', 'run', 'outside', 'play', 'park'],
-    icon: Icons.directions_walk,
+    keywords: ['vaccine', 'vaccination', 'shot', 'immunization'],
+    emoji: '💉',
   ),
-  _LogIconRule(keywords: ['teeth', 'brush', 'dental'], icon: Icons.brush),
-  _LogIconRule(keywords: ['story', 'read', 'book'], icon: Icons.menu_book),
-  _LogIconRule(keywords: ['music', 'song', 'sing'], icon: Icons.music_note),
-  _LogIconRule(keywords: ['play', 'toy', 'lego'], icon: Icons.toys),
+  _LogIconRule(keywords: ['sick', 'ill', 'unwell'], emoji: '🤒'),
+  _LogIconRule(keywords: ['weight', 'weigh', 'scale'], emoji: '⚖️'),
+  
+  // Activity/Play
   _LogIconRule(
-    keywords: ['note', 'journal', 'general', 'other'],
-    icon: Icons.event_note,
+    keywords: ['walk', 'exercise', 'run', 'outside', 'stroll'],
+    emoji: '🚶',
+  ),
+  _LogIconRule(keywords: ['play', 'toy', 'lego', 'game'], emoji: '🧸'),
+  _LogIconRule(keywords: ['park', 'playground', 'swing'], emoji: '🎠'),
+  _LogIconRule(keywords: ['tummy', 'tummy time'], emoji: '🤸'),
+  
+  // Learning/Development
+  _LogIconRule(keywords: ['story', 'read', 'book'], emoji: '📚'),
+  _LogIconRule(keywords: ['music', 'song', 'sing'], emoji: '🎵'),
+  _LogIconRule(keywords: ['train', 'practice', 'learn'], emoji: '🎓'),
+  _LogIconRule(keywords: ['milestone', 'achievement'], emoji: '🏆'),
+  
+  // Emotions/Behavior
+  _LogIconRule(keywords: ['cry', 'crying', 'fussy', 'upset'], emoji: '😢'),
+  _LogIconRule(keywords: ['happy', 'smile', 'laugh'], emoji: '😊'),
+  _LogIconRule(keywords: ['calm', 'peaceful', 'quiet'], emoji: '😌'),
+  
+  // Special moments
+  _LogIconRule(keywords: ['photo', 'picture', 'camera'], emoji: '📸'),
+  _LogIconRule(keywords: ['birth', 'birthday', 'party'], emoji: '🎂'),
+  _LogIconRule(keywords: ['gift', 'present'], emoji: '🎁'),
+  
+  // Default/General
+  _LogIconRule(
+    keywords: ['note', 'journal', 'general', 'other', 'misc'],
+    emoji: '📝',
   ),
 ];
