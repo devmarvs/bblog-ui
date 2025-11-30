@@ -71,8 +71,7 @@ class AuthRepository {
           return;
         } on DioException catch (e) {
           lastError = e;
-          if (e.response?.statusCode != 404 &&
-              e.response?.statusCode != 401) {
+          if (e.response?.statusCode != 404 && e.response?.statusCode != 401) {
             rethrow;
           }
           // Else try GET below.
@@ -88,8 +87,7 @@ class AuthRepository {
           return;
         } on DioException catch (e) {
           lastError = e;
-          if (e.response?.statusCode != 404 &&
-              e.response?.statusCode != 401) {
+          if (e.response?.statusCode != 404 && e.response?.statusCode != 401) {
             rethrow;
           }
         }
@@ -103,10 +101,51 @@ class AuthRepository {
     required String email,
     required String verificationCode,
   }) async {
-    await dio.post(
+    final trimmedEmail = email.trim();
+    final trimmedCode = verificationCode.trim();
+    // Try primary + confirm-only aliases in case the backend is configured differently.
+    final endpoints = <String>[
+      ApiPaths.emailVerificationConfirmAlt, // /bblog/user/verify
       ApiPaths.emailVerificationConfirm,
-      data: {'email': email, 'code': verificationCode},
-    );
+      '/user/verify-email/confirm', // no-prefix alias
+      '/user/verify-email', // some backends accept confirm via same endpoint
+    ];
+
+    DioException? lastError;
+    for (final path in endpoints) {
+      for (final skipAuth in [true, false]) {
+        try {
+          await dio.post(
+            path,
+            data: {'email': trimmedEmail, 'code': trimmedCode},
+            options: Options(extra: {'skipAuth': skipAuth}),
+          );
+          return;
+        } on DioException catch (e) {
+          lastError = e;
+          if (e.response?.statusCode != 404 && e.response?.statusCode != 401) {
+            rethrow;
+          }
+        }
+
+        // Some environments require GET; try that before giving up.
+        try {
+          await dio.get(
+            path,
+            queryParameters: {'email': trimmedEmail, 'code': trimmedCode},
+            options: Options(extra: {'skipAuth': skipAuth}),
+          );
+          return;
+        } on DioException catch (e) {
+          lastError = e;
+          if (e.response?.statusCode != 404 && e.response?.statusCode != 401) {
+            rethrow;
+          }
+        }
+      }
+    }
+
+    if (lastError != null) throw lastError;
   }
 
   Future<void> requestPasswordReset({required String email}) async {

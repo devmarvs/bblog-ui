@@ -7,9 +7,12 @@ class ApiPaths {
   // Aliases supported by the backend.
   static const String emailVerificationRequestLegacy =
       '$base/user/verify-email/request';
-  static const String emailVerificationResend = '$base/user/resend-verification';
+  static const String emailVerificationResend =
+      '$base/user/resend-verification';
   static const String emailVerificationConfirm =
       '$base/user/verify-email/confirm';
+  // New confirm endpoint used by backend (preferred).
+  static const String emailVerificationConfirmAlt = '$base/user/verify';
   static const String passwordForgot = '$base/user/password/forgot';
   static const String passwordReset = '$base/user/password/reset';
   static String user(String id) => '$base/user/$id';

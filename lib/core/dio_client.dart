@@ -34,11 +34,11 @@ class DioClient {
           // Basic 401 handling → notify app to logout
           final path = e.requestOptions.path;
           final isLoginRequest = path.endsWith(ApiPaths.login);
-          final isVerificationRequest = path.endsWith(
-                ApiPaths.emailVerificationRequest,
-              ) ||
+          final isVerificationRequest =
+              path.endsWith(ApiPaths.emailVerificationRequest) ||
               path.endsWith(ApiPaths.emailVerificationRequestLegacy) ||
-              path.endsWith(ApiPaths.emailVerificationConfirm);
+              path.endsWith(ApiPaths.emailVerificationConfirm) ||
+              path.endsWith(ApiPaths.emailVerificationConfirmAlt);
 
           // Ignore auth failures on login/verification endpoints so we can
           // surface the actual error message instead of resetting state.
