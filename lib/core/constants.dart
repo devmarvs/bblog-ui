@@ -15,6 +15,8 @@ class ApiPaths {
   static const String emailVerificationConfirmAlt = '$base/user/verify';
   static const String passwordForgot = '$base/user/password/forgot';
   static const String passwordReset = '$base/user/password/reset';
+  static const String version = '$base/version';
+  static const String versioning = '$base/versioning'; // legacy fallback
   static String user(String id) => '$base/user/$id';
   static String userSubUsers(String userId) => '$base/user/$userId/subuser';
   static const String subUserLog = '$base/subuser/log';

@@ -5,6 +5,7 @@ import '../repositories/log_type_repository.dart';
 import '../repositories/subuser_repository.dart';
 import '../repositories/user_repository.dart';
 import '../repositories/user_type_repository.dart';
+import '../repositories/version_repository.dart';
 import 'auth_providers.dart';
 
 final userRepositoryProvider = Provider<UserRepository>(
@@ -25,4 +26,8 @@ final logTypeRepositoryProvider = Provider<LogTypeRepository>(
 
 final userTypeRepositoryProvider = Provider<UserTypeRepository>(
   (ref) => UserTypeRepository(ref.watch(dioProvider)),
+);
+
+final versionRepositoryProvider = Provider<VersionRepository>(
+  (ref) => VersionRepository(ref.watch(dioProvider)),
 );

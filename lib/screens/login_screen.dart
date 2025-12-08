@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/auth_providers.dart';
+import '../providers/version_providers.dart';
 import '../widgets/common.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -51,6 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     final auth = ref.watch(authControllerProvider);
+    final versionInfo = ref.watch(versionInfoProvider);
     final errorText = auth.error;
     return Scaffold(
       appBar: AppBar(
@@ -74,105 +76,134 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SingleChildScrollView(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const BrandLogo(size: 140),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: _emailCtrl,
-                      decoration: const InputDecoration(labelText: 'Email'),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (v) =>
-                          (v == null || v.isEmpty) ? 'Enter email' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _pwCtrl,
-                      obscureText: true,
-                      decoration: const InputDecoration(labelText: 'Password'),
-                      validator: (v) =>
-                          (v == null || v.isEmpty) ? 'Enter password' : null,
-                    ),
-                    if (errorText != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .errorContainer
-                              .withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          errorText,
-                          style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onErrorContainer,
-                            fontWeight: FontWeight.w600,
+      body: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: SingleChildScrollView(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const BrandLogo(size: 140),
+                          const SizedBox(height: 24),
+                          TextFormField(
+                            controller: _emailCtrl,
+                            decoration: const InputDecoration(labelText: 'Email'),
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (v) =>
+                                (v == null || v.isEmpty) ? 'Enter email' : null,
                           ),
-                        ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _pwCtrl,
+                            obscureText: true,
+                            decoration: const InputDecoration(labelText: 'Password'),
+                            validator: (v) =>
+                                (v == null || v.isEmpty) ? 'Enter password' : null,
+                          ),
+                          if (errorText != null) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .errorContainer
+                                    .withValues(alpha: 0.8),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                errorText,
+                                style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          PrimaryButton(
+                            label: 'Log in',
+                            loading: auth.loading,
+                            onPressed: () async {
+                              if (_formKey.currentState!.validate()) {
+                                await ref
+                                    .read(authControllerProvider.notifier)
+                                    .login(_emailCtrl.text.trim(), _pwCtrl.text);
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextButton(
+                            onPressed: () {
+                              final email = _emailCtrl.text.trim();
+                              final uri = Uri(
+                                path: '/forgot-password',
+                                queryParameters:
+                                    email.isEmpty ? null : {'email': email},
+                              );
+                              context.go(uri.toString());
+                            },
+                            child: const Text('Forgot password?'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              final email = _emailCtrl.text.trim();
+                              final uri = Uri(
+                                path: '/verify-email',
+                                queryParameters:
+                                    email.isEmpty ? null : {'email': email},
+                              );
+                              context.go(uri.toString());
+                            },
+                            child: const Text('Need to verify your email?'),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: () => context.go('/signup'),
+                            child: const Text('Create an account'),
+                          ),
+                        ],
                       ),
-                    ],
-                    const SizedBox(height: 16),
-                    PrimaryButton(
-                      label: 'Log in',
-                      loading: auth.loading,
-                      onPressed: () async {
-                        if (_formKey.currentState!.validate()) {
-                          await ref
-                              .read(authControllerProvider.notifier)
-                              .login(_emailCtrl.text.trim(), _pwCtrl.text);
-                        }
-                      },
                     ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () {
-                        final email = _emailCtrl.text.trim();
-                        final uri = Uri(
-                          path: '/forgot-password',
-                          queryParameters:
-                              email.isEmpty ? null : {'email': email},
-                        );
-                        context.go(uri.toString());
-                      },
-                      child: const Text('Forgot password?'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        final email = _emailCtrl.text.trim();
-                        final uri = Uri(
-                          path: '/verify-email',
-                          queryParameters:
-                              email.isEmpty ? null : {'email': email},
-                        );
-                        context.go(uri.toString());
-                      },
-                      child: const Text('Need to verify your email?'),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () => context.go('/signup'),
-                      child: const Text('Create an account'),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: versionInfo.when(
+              data: (info) {
+                final version = info?.mobileVersion;
+                if (version == null || version.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: Text(
+                    'Mobile version: $version',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+          ),
+        ],
       ),
     );
   }
