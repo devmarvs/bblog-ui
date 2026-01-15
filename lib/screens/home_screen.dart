@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/auth_providers.dart';
 import '../widgets/common.dart';
+import '../widgets/glass.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -171,8 +172,11 @@ class _HomeActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return GlassPanel(
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(18),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         title: Text(action.title),
         subtitle: Text(action.subtitle),
         leading: CircleAvatar(

@@ -9,6 +9,7 @@ import '../models/sub_user.dart';
 import '../providers/auth_providers.dart';
 import '../providers/repository_providers.dart';
 import '../widgets/common.dart';
+import '../widgets/glass.dart';
 
 enum HistoryRange { day, week, month, all }
 
@@ -596,13 +597,10 @@ class _HistoryLogCard extends StatelessWidget {
     final description = log.logDescription?.trim() ?? '';
     final hasDescription = description.isNotEmpty;
 
-    return Container(
+    return GlassPanel(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.18)),
-      ),
+      borderRadius: BorderRadius.circular(16),
+      showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

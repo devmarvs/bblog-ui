@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_providers.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/common.dart';
+import '../widgets/glass.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -68,8 +69,14 @@ class ProfileScreen extends ConsumerWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            Card(
+            GlassPanel(
+              padding: EdgeInsets.zero,
+              borderRadius: BorderRadius.circular(18),
               child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 leading: CircleAvatar(
                   backgroundColor: colorScheme.primaryContainer,
                   child: Icon(Icons.person, color: colorScheme.onPrimaryContainer),

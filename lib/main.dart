@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/app_theme.dart';
 import 'core/app_router.dart';
 import 'providers/theme_provider.dart';
+import 'widgets/glass.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,10 @@ class BBlogApp extends ConsumerWidget {
       darkTheme: buildTheme(Brightness.dark),
       themeMode: themeMode,
       routerConfig: router,
+      builder: (context, child) {
+        if (child == null) return const SizedBox.shrink();
+        return GlassBackground(child: child);
+      },
     );
   }
 }

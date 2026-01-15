@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'glass.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String label;
@@ -38,10 +39,10 @@ class Section extends StatelessWidget {
   const Section({super.key, required this.title, required this.child});
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: GlassPanel(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

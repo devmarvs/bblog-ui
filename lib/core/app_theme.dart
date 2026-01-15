@@ -40,32 +40,34 @@ ThemeData buildTheme(Brightness brightness) {
     inversePrimary:
         isLight ? const Color(0xFF2F6AA5) : const Color(0xFFD0E4FF),
   );
-  final surfaceContainerBase =
-      isLight ? const Color(0xFFE6E2F2) : const Color(0xFF424655);
+  final surfaceContainerBase = colorScheme.surface;
 
   final base = ThemeData(
     useMaterial3: true,
     brightness: brightness,
     colorScheme: colorScheme,
-    scaffoldBackgroundColor: colorScheme.surface,
+    scaffoldBackgroundColor: Colors.transparent,
     fontFamily: 'Roboto',
   );
 
   return base.copyWith(
     appBarTheme: base.appBarTheme.copyWith(
-      backgroundColor: colorScheme.primaryContainer,
-      foregroundColor: colorScheme.onPrimaryContainer,
+      backgroundColor: colorScheme.surface.withValues(alpha: 0.65),
+      foregroundColor: colorScheme.onSurface,
       centerTitle: true,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
       titleTextStyle: base.textTheme.titleMedium?.copyWith(
-        color: colorScheme.onPrimaryContainer,
+        color: colorScheme.onSurface,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.2,
       ),
     ),
     navigationBarTheme: base.navigationBarTheme.copyWith(
-      backgroundColor: colorScheme.surface,
-      indicatorColor: colorScheme.primaryContainer.withValues(alpha: 0.6),
+      backgroundColor: colorScheme.surface.withValues(alpha: 0.65),
+      indicatorColor: colorScheme.primary.withValues(alpha: 0.24),
       labelTextStyle: WidgetStatePropertyAll(
         TextStyle(
           fontWeight: FontWeight.w600,
@@ -80,9 +82,19 @@ ThemeData buildTheme(Brightness brightness) {
         ),
       ),
     ),
+    navigationRailTheme: base.navigationRailTheme.copyWith(
+      backgroundColor: colorScheme.surface.withValues(alpha: 0.6),
+      selectedIconTheme: IconThemeData(color: colorScheme.primary),
+      unselectedIconTheme:
+          IconThemeData(color: colorScheme.onSurfaceVariant),
+      selectedLabelTextStyle: TextStyle(color: colorScheme.onSurface),
+      unselectedLabelTextStyle:
+          TextStyle(color: colorScheme.onSurfaceVariant),
+    ),
     cardTheme: base.cardTheme.copyWith(
-      color: colorScheme.surface,
-      elevation: 2,
+      color: colorScheme.surface.withValues(alpha: 0.6),
+      elevation: 0,
+      shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
       ),
@@ -91,17 +103,17 @@ ThemeData buildTheme(Brightness brightness) {
     inputDecorationTheme: base.inputDecorationTheme.copyWith(
       filled: true,
       fillColor: isLight
-          ? surfaceContainerBase.withValues(alpha: 0.4)
-          : surfaceContainerBase.withValues(alpha: 0.2),
+          ? surfaceContainerBase.withValues(alpha: 0.6)
+          : surfaceContainerBase.withValues(alpha: 0.25),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide:
-            BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+            BorderSide(color: colorScheme.outline.withValues(alpha: 0.28)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide:
-            BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+            BorderSide(color: colorScheme.outline.withValues(alpha: 0.28)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
