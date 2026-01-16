@@ -134,11 +134,13 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Babies and Pets',
-                  style: Theme.of(context).textTheme.titleMedium,
+                Expanded(
+                  child: Text(
+                    'Babies and Pets',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 IconButton(
                   tooltip: 'Refresh',
@@ -221,39 +223,42 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
                     maxLines: 3,
                   ),
                   const SizedBox(height: 12),
-                  SegmentedButton<_QuickTimeRange>(
-                    segments: const [
-                      ButtonSegment(
-                        value: _QuickTimeRange.now,
-                        label: Text('Now'),
-                        icon: Icon(Icons.flash_on_outlined),
-                      ),
-                      ButtonSegment(
-                        value: _QuickTimeRange.minus1Hour,
-                        label: Text('-1h'),
-                        icon: Icon(Icons.timer_outlined),
-                      ),
-                      ButtonSegment(
-                        value: _QuickTimeRange.minus4Hours,
-                        label: Text('-4h'),
-                        icon: Icon(Icons.schedule),
-                      ),
-                    ],
-                    showSelectedIcon: false,
-                    selected: _quickTimeRange == null
-                        ? const <_QuickTimeRange>{}
-                        : <_QuickTimeRange>{_quickTimeRange!},
-                    onSelectionChanged: (values) {
-                      if (values.isEmpty) {
-                        setState(() => _quickTimeRange = null);
-                        return;
-                      }
-                      final range = values.first;
-                      setState(() {
-                        _quickTimeRange = range;
-                        _logTime = _resolveQuickTime(range);
-                      });
-                    },
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SegmentedButton<_QuickTimeRange>(
+                      segments: const [
+                        ButtonSegment(
+                          value: _QuickTimeRange.now,
+                          label: Text('Now'),
+                          icon: Icon(Icons.flash_on_outlined),
+                        ),
+                        ButtonSegment(
+                          value: _QuickTimeRange.minus1Hour,
+                          label: Text('-1h'),
+                          icon: Icon(Icons.timer_outlined),
+                        ),
+                        ButtonSegment(
+                          value: _QuickTimeRange.minus4Hours,
+                          label: Text('-4h'),
+                          icon: Icon(Icons.schedule),
+                        ),
+                      ],
+                      showSelectedIcon: false,
+                      selected: _quickTimeRange == null
+                          ? const <_QuickTimeRange>{}
+                          : <_QuickTimeRange>{_quickTimeRange!},
+                      onSelectionChanged: (values) {
+                        if (values.isEmpty) {
+                          setState(() => _quickTimeRange = null);
+                          return;
+                        }
+                        final range = values.first;
+                        setState(() {
+                          _quickTimeRange = range;
+                          _logTime = _resolveQuickTime(range);
+                        });
+                      },
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(

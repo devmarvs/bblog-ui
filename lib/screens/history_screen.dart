@@ -283,14 +283,17 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           suggestionsBuilder: _buildSearchSuggestions,
         ),
         const SizedBox(height: 12),
-        SegmentedButton<HistoryRange>(
-          showSelectedIcon: false,
-          segments: _historyRangeSegments,
-          selected: <HistoryRange>{_range},
-          onSelectionChanged: (values) {
-            if (values.isEmpty) return;
-            setState(() => _range = values.first);
-          },
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SegmentedButton<HistoryRange>(
+            showSelectedIcon: false,
+            segments: _historyRangeSegments,
+            selected: <HistoryRange>{_range},
+            onSelectionChanged: (values) {
+              if (values.isEmpty) return;
+              setState(() => _range = values.first);
+            },
+          ),
         ),
       ],
     );

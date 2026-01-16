@@ -46,43 +46,45 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           constraints: const BoxConstraints(maxWidth: 480),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'Enter your account email. We will send a reset code '
-                    'you can use to set a new password.',
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _emailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(labelText: 'Email'),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Enter your email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  PrimaryButton(
-                    label: 'Send reset code',
-                    loading: _submitting,
-                    onPressed: _submitting ? null : _submit,
-                  ),
-                  TextButton(
-                    onPressed: () => context.go('/login'),
-                    child: const Text('Back to login'),
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 8),
-                    Text(_error!, style: const TextStyle(color: Colors.red)),
+            child: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'Enter your account email. We will send a reset code '
+                      'you can use to set a new password.',
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(labelText: 'Email'),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Enter your email';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    PrimaryButton(
+                      label: 'Send reset code',
+                      loading: _submitting,
+                      onPressed: _submitting ? null : _submit,
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/login'),
+                      child: const Text('Back to login'),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 8),
+                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

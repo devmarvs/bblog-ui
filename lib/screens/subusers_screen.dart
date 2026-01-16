@@ -104,18 +104,22 @@ class _SubUsersScreenState extends ConsumerState<SubUsersScreen> {
           children: [
             Row(
               children: [
-                Text(
-                  'Your babies and pets',
-                  style: Theme.of(context).textTheme.titleMedium,
+                Expanded(
+                  child: Text(
+                    'Your babies and pets',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Badge.count(
                   count: _filteredSubUsers.length,
-                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.secondaryContainer,
                   textColor: Theme.of(context).colorScheme.onSecondaryContainer,
                   child: const Icon(Icons.pets_outlined),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 IconButton(
                   tooltip: 'Refresh',
                   onPressed: (_loading || !hasUser)

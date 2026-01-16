@@ -29,72 +29,80 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Appearance',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            SegmentedButton<ThemeMode>(
-              segments: const [
-                ButtonSegment(
-                  value: ThemeMode.system,
-                  icon: Icon(Icons.auto_mode),
-                  label: Text('System'),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.light,
-                  icon: Icon(Icons.wb_sunny_outlined),
-                  label: Text('Light'),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.dark,
-                  icon: Icon(Icons.dark_mode_outlined),
-                  label: Text('Dark'),
-                ),
-              ],
-              selected: <ThemeMode>{themeMode},
-              onSelectionChanged: (value) {
-                if (value.isEmpty) return;
-                themeNotifier.setThemeMode(value.first);
-              },
-            ),
-            const SizedBox(height: 32),
-            Text(
-              'Account',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            GlassPanel(
-              padding: EdgeInsets.zero,
-              borderRadius: BorderRadius.circular(18),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
-                ),
-                leading: CircleAvatar(
-                  backgroundColor: colorScheme.primaryContainer,
-                  child: Icon(Icons.person, color: colorScheme.onPrimaryContainer),
-                ),
-                title: const Text('Signed in'),
-                subtitle: Text(
-                  'Manage access or sign out below.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                trailing: FilledButton.tonalIcon(
-                  onPressed: () =>
-                      ref.read(authControllerProvider.notifier).logout(),
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Sign out'),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Appearance',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SegmentedButton<ThemeMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ThemeMode.system,
+                      icon: Icon(Icons.auto_mode),
+                      label: Text('System'),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.light,
+                      icon: Icon(Icons.wb_sunny_outlined),
+                      label: Text('Light'),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.dark,
+                      icon: Icon(Icons.dark_mode_outlined),
+                      label: Text('Dark'),
+                    ),
+                  ],
+                  selected: <ThemeMode>{themeMode},
+                  onSelectionChanged: (value) {
+                    if (value.isEmpty) return;
+                    themeNotifier.setThemeMode(value.first);
+                  },
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 32),
+              Text(
+                'Account',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              GlassPanel(
+                padding: EdgeInsets.zero,
+                borderRadius: BorderRadius.circular(18),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.person,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  title: const Text('Signed in'),
+                  subtitle: Text(
+                    'Manage access or sign out below.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  trailing: FilledButton.tonalIcon(
+                    onPressed: () =>
+                        ref.read(authControllerProvider.notifier).logout(),
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Sign out'),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: buildAppNavigationBar(context, currentIndex: 4),
