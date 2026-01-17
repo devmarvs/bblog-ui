@@ -168,7 +168,9 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
                   _userTypeError!,
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 ),
               ),
             const SizedBox(height: 16),
@@ -211,7 +213,9 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Text(
                         _logTypeError!,
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                       ),
                     ),
                   const SizedBox(height: 12),
@@ -307,7 +311,9 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
                         'User details unavailable. Please log in again.',
                         style: Theme.of(
                           context,
-                        ).textTheme.bodySmall?.copyWith(color: Colors.red),
+                        ).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
                       ),
                     ),
                 ],
@@ -331,7 +337,10 @@ class _AddLogScreenState extends ConsumerState<AddLogScreen> {
       );
     }
     if (_subUserError != null) {
-      return Text(_subUserError!, style: const TextStyle(color: Colors.red));
+      return Text(
+        _subUserError!,
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
+      );
     }
     if (_subUsers == null) {
       return const Text('Fetching sub-users...');

@@ -52,8 +52,16 @@ ThemeData buildTheme(Brightness brightness) {
     scaffoldBackgroundColor: Colors.transparent,
     fontFamily: 'Roboto',
   );
+  final textTheme = base.textTheme.apply(
+    bodyColor: colorScheme.onSurface,
+    displayColor: colorScheme.onSurface,
+  );
+  final actionTextColor = isLight
+      ? Color.lerp(colorScheme.primary, colorScheme.onSurface, 0.45)!
+      : colorScheme.primary;
 
   return base.copyWith(
+    textTheme: textTheme,
     appBarTheme: base.appBarTheme.copyWith(
       backgroundColor: colorScheme.surface.withValues(alpha: 0.65),
       foregroundColor: colorScheme.onSurface,
@@ -146,8 +154,8 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: colorScheme.primary,
-        side: BorderSide(color: colorScheme.primary),
+        foregroundColor: actionTextColor,
+        side: BorderSide(color: actionTextColor),
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
@@ -157,7 +165,7 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: colorScheme.secondary,
+        foregroundColor: actionTextColor,
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
     ),

@@ -180,7 +180,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           children: [
             Text(
               _subUsersError!,
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
@@ -398,7 +398,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       return Center(
         child: Text(
           _logsError!,
-          style: const TextStyle(color: Colors.red),
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
           textAlign: TextAlign.center,
         ),
       );

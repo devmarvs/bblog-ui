@@ -173,7 +173,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       const SizedBox(height: 8),
                       Text(
                         auth.error!,
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                       ),
                     ],
                   ],
