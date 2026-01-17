@@ -77,6 +77,12 @@ class BrandLogo extends StatelessWidget {
     final highlight = colors.secondary;
     final primary = colors.primary;
     final surface = colors.surface;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final titleColor =
+        isLight ? colors.onInverseSurface : colors.onSurface;
+    final subtitleColor = isLight
+        ? colors.onInverseSurface.withValues(alpha: 0.82)
+        : colors.onSurfaceVariant;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -113,6 +119,7 @@ class BrandLogo extends StatelessWidget {
         Text(
           'Baby and Pet Log',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: titleColor,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
           ),
@@ -123,7 +130,7 @@ class BrandLogo extends StatelessWidget {
           'Gentle care for little ones and furry friends',
           style: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+          ).textTheme.bodyMedium?.copyWith(color: subtitleColor),
           textAlign: TextAlign.center,
         ),
       ],

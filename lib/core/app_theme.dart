@@ -41,6 +41,9 @@ ThemeData buildTheme(Brightness brightness) {
         isLight ? const Color(0xFF2F6AA5) : const Color(0xFFD0E4FF),
   );
   final surfaceContainerBase = colorScheme.surface;
+  final inputFillColor = isLight
+      ? surfaceContainerBase.withValues(alpha: 0.6)
+      : surfaceContainerBase.withValues(alpha: 0.25);
 
   final base = ThemeData(
     useMaterial3: true,
@@ -102,9 +105,7 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     inputDecorationTheme: base.inputDecorationTheme.copyWith(
       filled: true,
-      fillColor: isLight
-          ? surfaceContainerBase.withValues(alpha: 0.6)
-          : surfaceContainerBase.withValues(alpha: 0.25),
+      fillColor: inputFillColor,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide:
@@ -120,6 +121,10 @@ ThemeData buildTheme(Brightness brightness) {
         borderSide: BorderSide(color: colorScheme.primary, width: 1.6),
       ),
       labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+      floatingLabelStyle: TextStyle(
+        color: colorScheme.onSurfaceVariant,
+        backgroundColor: inputFillColor,
+      ),
       hintStyle: TextStyle(
         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
       ),
